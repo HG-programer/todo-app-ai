@@ -26,28 +26,31 @@
         <!-- Form to Add New Tasks -->
         <h2 class="h4">Add New Task</h2> <!-- Used heading class for size -->
         <!-- Added Bootstrap classes to form and elements (Modified) -->
-        <form action="{{ url_for('add_task') }}" method="post" class="d-flex mb-4">
-            <input type="text" name="task" class="form-control me-2" placeholder="Enter task..." required>
-            <button type="submit" class="btn btn-primary">Add Task</button>
+        <!-- Add New Task Form -->
+        <!-- Added id="addTaskForm" and id="taskInput" -->
+        <form id="addTaskForm" method="post" class="mb-3 d-flex">
+        <input type="text" name="task" id="taskInput" placeholder="Add new task..." class="form-control me-2" required>
+        <button type="submit" class="btn btn-primary">Add Task</button>
         </form>
 
         <!-- List of Tasks -->
-        <h2 class="h4">Tasks</h2> <!-- Used heading class for size -->
-        <!-- Added Bootstrap list-group class (Modified) -->
-        <ul class="list-group">
-            {% for task in tasks %}
-                <!-- Added list-group-item and kept task-item class (Modified) -->
-                <li class="list-group-item task-item">
-                    <span class="task-text">{{ task }}</span>
-                    <!-- Added Bootstrap button classes (Modified) -->
-                    <button class="ask-ai-btn btn btn-sm btn-outline-info" data-task-text="{{ task }}">Ask AI</button>
-                </li>
-            {% else %}
-                <li class="list-group-item">No tasks yet!</li>
+       <!-- Task List -->
+        <h2>Tasks</h2>
+        <!-- Added id="taskList" -->
+        <ul id="taskList" class="list-group">
+         {% for task in tasks %}
+            <li class="list-group-item task-item">
+            <span class="task-text">{{ task }}</span>
+            <div>
+            <button class="ask-ai-btn btn btn-info btn-sm" data-task-text="{{ task }}">Ask AI</button>
+         </div>
+         </li>
+         {% else %}
+            <!-- Added id="noTasksMessage" -->
+            <li id="noTasksMessage" class="list-group-item">No tasks yet!</li>
             {% endfor %}
-        </ul>
-
-    </div> <!-- End of container -->
+            </ul>
+          </div> <!-- End of container -->
 
 
     <!-- === BOOTSTRAP JAVASCRIPT BUNDLE (Includes Popper) (Added) === -->
@@ -56,6 +59,146 @@
     <!-- === YOUR CUSTOM JAVASCRIPT (for Ask AI button) (Kept) === -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- START: New Code for Dynamic Task Adding ---
+
+const addTaskForm = document.getElementById('addTaskForm');
+const taskInput = document.getElementById('taskInput');
+const taskList = document.getElementById('taskList');
+
+addTaskForm.addEventListener('submit', async (event) => {
+    event.preventDefault(); // Prevent the default form submission (page reload)
+
+    const taskText = taskInput.value.trim(); // Get text from input and remove whitespace
+
+    if (taskText === "") {
+        return; // Don't add empty tasks
+    }
+
+    // Optional: Add visual feedback (disable button, etc.)
+    const submitButton = addTaskForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Adding...';
+
+    try {
+        const response = await fetch("{{ url_for('add_task') }}", { // Use url_for for the route
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ task: taskText }) // Send task text as JSON
+        });
+
+        const result = await response.json(); // Expecting JSON response from Flask
+
+        if (response.status === 201 && result.success) {
+            // --- Dynamically add the new task to the list ---
+            addNewTaskToList(result.task); // Call a helper function to add the task li
+            taskInput.value = ''; // Clear the input field
+            // Remove the "No tasks yet!" message if it exists
+            const noTasksMsg = document.getElementById('noTasksMessage');
+            if (noTasksMsg) {
+                noTasksMsg.remove();
+            }
+            // --- End of dynamic addition ---
+        } else {
+            // Handle server errors (show message to user)
+            alert(`Error adding task: ${result.error || 'Unknown server error'}`);
+        }
+
+    } catch (error) {
+        console.error('Network or fetch error:', error);
+        alert('Failed to add task. Check the console for details.');
+    } finally {
+        // Re-enable button and restore text
+        submitButton.disabled = false;
+        submitButton.textContent = 'Add Task';
+    }
+});
+
+// --- Helper function to create and add the new list item ---
+function addNewTaskToList(taskText) {
+    const li = document.createElement('li');
+    li.className = 'list-group-item task-item'; // Apply Bootstrap classes
+
+    // Create span for task text
+    const span = document.createElement('span');
+    span.className = 'task-text';
+    span.textContent = taskText;
+
+    // Create div for buttons
+    const buttonDiv = document.createElement('div');
+
+    // Create "Ask AI" button
+    const aiButton = document.createElement('button');
+    aiButton.className = 'ask-ai-btn btn btn-info btn-sm';
+    aiButton.textContent = 'Ask AI';
+    aiButton.dataset.taskText = taskText; // Set the data attribute correctly
+
+    // !!! IMPORTANT: Attach the event listener to the NEW Ask AI button !!!
+    attachAskAiListener(aiButton);
+
+    // Append elements
+    buttonDiv.appendChild(aiButton);
+    li.appendChild(span);
+    li.appendChild(buttonDiv);
+    taskList.appendChild(li);
+}
+
+// --- Function to attach listener (extracted from existing code) ---
+// We need to reuse the listener logic for new buttons
+function attachAskAiListener(button) {
+    button.addEventListener('click', async () => {
+        const taskText = button.dataset.taskText;
+        button.disabled = true;
+        button.textContent = 'Asking AI...';
+
+        try {
+            const response = await fetch('/ask-ai', { // Note: Not using url_for here, assuming stable path
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', },
+                body: JSON.stringify({ task_text: taskText })
+            });
+            const result = await response.json();
+
+            // Get references to modal elements (ensure modal HTML exists)
+            const modalTitleSpan = document.getElementById('modalTaskTitle');
+            const modalBody = document.getElementById('aiResponseModalBody');
+            const aiModalElement = document.getElementById('aiResponseModal');
+            const aiModal = new bootstrap.Modal(aiModalElement);
+
+            if (response.ok) {
+                modalTitleSpan.textContent = taskText;
+                modalBody.innerText = result.details;
+                aiModal.show();
+            } else {
+                modalTitleSpan.textContent = "Error";
+                modalBody.innerText = `Error fetching AI details: ${result.error || 'Unknown server error'}`;
+                aiModal.show();
+            }
+        } catch (error) {
+            console.error('Network or fetch error:', error);
+            alert('Failed to contact the AI service. Check the console for details.');
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Ask AI';
+        }
+    });
+}
+
+// --- Modify the original Ask AI button setup to use the function ---
+// Find this block near the top of your original script:
+// const aiButtons = document.querySelectorAll('.ask-ai-btn');
+// aiButtons.forEach(button => {
+//     // ALL THE LISTENER CODE INSIDE HERE...
+// });
+// Replace it with this:
+const initialAiButtons = document.querySelectorAll('.ask-ai-btn');
+initialAiButtons.forEach(button => {
+    attachAskAiListener(button); // Use the new function
+});
+
+// --- END: New Code for Dynamic Task Adding ---
+            
             // Select all "Ask AI" buttons
             const aiButtons = document.querySelectorAll('.ask-ai-btn');
 

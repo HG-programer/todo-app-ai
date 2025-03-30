@@ -16,10 +16,25 @@ def index():
 # --- Add this new function ---
 @app.route('/add', methods=['POST'])
 def add_task():
-    task_content = request.form.get('task') # Get the task from the form input (name="task")
-    if task_content: # Make sure something was actually submitted
-        tasks.append(task_content) # Add it to our Python list
-    return redirect(url_for('index')) # Redirect back to the main page ('/')
+    try:
+        # Check if the request contains JSON data
+        if not request.is_json:
+            return jsonify({"success": False, "error": "Request must be JSON"}), 400 # Bad Request
+
+        data = request.get_json()
+        task = data.get('task') # Get task from JSON key 'task'
+
+        if not task: # Basic validation
+            return jsonify({"success": False, "error": "Task content cannot be empty"}), 400
+
+        tasks.append(task) # Add to your list (or database later)
+
+        # Return success response with the added task
+        return jsonify({"success": True, "task": task}), 201 # 201 Created
+
+    except Exception as e:
+        print(f"Error adding task: {e}", file=sys.stderr)
+        return jsonify({"success": False, "error": "Internal server error"}), 500
 # --- End of new function ---
 # <<< PASTE THIS CODE BLOCK AFTER add_task() FUNCTION >>>
 
