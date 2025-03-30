@@ -1,0 +1,19 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables - VERY IMPORTANT
+.env
+*.env
+
+# Virtual environment folders (if you ever create one locally)
+.venv
+venv/
+env/
+ENV/
+
+# OS generated files
+.DS_Store
+Thumbs.db
