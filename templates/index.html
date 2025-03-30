@@ -76,12 +76,26 @@
 
                         const result = await response.json(); // Parse JSON response from Flask
 
+                        // Get references to modal elements
+                        const modalTitleSpan = document.getElementById('modalTaskTitle');
+                        const modalBody = document.getElementById('aiResponseModalBody');
+                        const aiModalElement = document.getElementById('aiResponseModal');
+                        // Create a Bootstrap Modal instance from the element
+                        const aiModal = new bootstrap.Modal(aiModalElement);
+
                         if (response.ok) {
-                            // Success! Display the details (simple alert for now)
-                            alert(`AI Details for "${taskText}":\n\n${result.details}`);
-                        } else {
-                            // Handle errors reported by the Flask backend
-                            alert(`Error fetching AI details: ${result.error || 'Unknown server error'}`);
+                             // --- NEW CODE TO SHOW MODAL ---
+                             modalTitleSpan.textContent = taskText; // Set the task title in the modal header
+                             // Use innerText to prevent potential HTML injection from AI response
+                            modalBody.innerText = result.details;
+                             aiModal.show(); // Show the modal
+                                // --- END OF NEW CODE ---
+                            } else {
+                                // --- Optional: Show error in modal too ---
+                             modalTitleSpan.textContent = "Error";
+                            modalBody.innerText = `Error fetching AI details: ${result.error || 'Unknown server error'}`;
+                             aiModal.show();
+                            // --- End of optional error handling ---
                         }
                     } catch (error) {
                         // Handle network errors or issues reaching the server
