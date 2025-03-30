@@ -97,6 +97,28 @@
             });
         });
     </script>
-
+<!-- === BOOTSTRAP MODAL for AI Response === -->
+<div class="modal fade" id="aiResponseModal" tabindex="-1" aria-labelledby="aiResponseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg"> <!-- modal-lg makes it wider -->
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="aiResponseModalLabel">AI Details for Task: <span id="modalTaskTitle"></span></h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="aiResponseModalBody">
+          <!-- AI response will be inserted here by JavaScript -->
+          Loading...
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- === END OF MODAL === -->
+  
+  <!-- Bootstrap JS Bundle goes here -->
+  <!-- Your Custom JS goes here -->
+  </body>
 </body>
 </html>
