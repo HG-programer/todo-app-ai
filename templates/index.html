@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>My AI To-Do List</title>
@@ -9,12 +10,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 
     <!-- Your original basic styles (can be kept or removed/moved to a CSS file later) -->
-    <style>
-        body { font-family: sans-serif; padding-top: 20px; /* Added padding */ }
-        /* We'll mostly rely on Bootstrap classes now, but you can keep custom styles */
-        .task-item { display: flex; justify-content: space-between; align-items: center; } /* Keep this for aligning button */
-        .task-text { flex-grow: 1; margin-right: 1em; } /* Allow text to take space */
-    </style>
 </head>
 <body>
 
@@ -57,203 +52,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
     <!-- === YOUR CUSTOM JAVASCRIPT (for Ask AI button) (Kept) === -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- START: New Code for Dynamic Task Adding ---
-
-const addTaskForm = document.getElementById('addTaskForm');
-const taskInput = document.getElementById('taskInput');
-const taskList = document.getElementById('taskList');
-
-addTaskForm.addEventListener('submit', async (event) => {
-    event.preventDefault(); // Prevent the default form submission (page reload)
-
-    const taskText = taskInput.value.trim(); // Get text from input and remove whitespace
-
-    if (taskText === "") {
-        return; // Don't add empty tasks
-    }
-
-    // Optional: Add visual feedback (disable button, etc.)
-    const submitButton = addTaskForm.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
-    submitButton.textContent = 'Adding...';
-
-    try {
-        const response = await fetch("{{ url_for('add_task') }}", { // Use url_for for the route
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ task: taskText }) // Send task text as JSON
-        });
-
-        const result = await response.json(); // Expecting JSON response from Flask
-
-        if (response.status === 201 && result.success) {
-            // --- Dynamically add the new task to the list ---
-            addNewTaskToList(result.task); // Call a helper function to add the task li
-            taskInput.value = ''; // Clear the input field
-            // Remove the "No tasks yet!" message if it exists
-            const noTasksMsg = document.getElementById('noTasksMessage');
-            if (noTasksMsg) {
-                noTasksMsg.remove();
-            }
-            // --- End of dynamic addition ---
-        } else {
-            // Handle server errors (show message to user)
-            alert(`Error adding task: ${result.error || 'Unknown server error'}`);
-        }
-
-    } catch (error) {
-        console.error('Network or fetch error:', error);
-        alert('Failed to add task. Check the console for details.');
-    } finally {
-        // Re-enable button and restore text
-        submitButton.disabled = false;
-        submitButton.textContent = 'Add Task';
-    }
-});
-
-// --- Helper function to create and add the new list item ---
-function addNewTaskToList(taskText) {
-    const li = document.createElement('li');
-    li.className = 'list-group-item task-item'; // Apply Bootstrap classes
-
-    // Create span for task text
-    const span = document.createElement('span');
-    span.className = 'task-text';
-    span.textContent = taskText;
-
-    // Create div for buttons
-    const buttonDiv = document.createElement('div');
-
-    // Create "Ask AI" button
-    const aiButton = document.createElement('button');
-    aiButton.className = 'ask-ai-btn btn btn-info btn-sm';
-    aiButton.textContent = 'Ask AI';
-    aiButton.dataset.taskText = taskText; // Set the data attribute correctly
-
-    // !!! IMPORTANT: Attach the event listener to the NEW Ask AI button !!!
-    attachAskAiListener(aiButton);
-
-    // Append elements
-    buttonDiv.appendChild(aiButton);
-    li.appendChild(span);
-    li.appendChild(buttonDiv);
-    taskList.appendChild(li);
-}
-
-// --- Function to attach listener (extracted from existing code) ---
-// We need to reuse the listener logic for new buttons
-function attachAskAiListener(button) {
-    button.addEventListener('click', async () => {
-        const taskText = button.dataset.taskText;
-        button.disabled = true;
-        button.textContent = 'Asking AI...';
-
-        try {
-            const response = await fetch('/ask-ai', { // Note: Not using url_for here, assuming stable path
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', },
-                body: JSON.stringify({ task_text: taskText })
-            });
-            const result = await response.json();
-
-            // Get references to modal elements (ensure modal HTML exists)
-            const modalTitleSpan = document.getElementById('modalTaskTitle');
-            const modalBody = document.getElementById('aiResponseModalBody');
-            const aiModalElement = document.getElementById('aiResponseModal');
-            const aiModal = new bootstrap.Modal(aiModalElement);
-
-            if (response.ok) {
-                modalTitleSpan.textContent = taskText;
-                modalBody.innerText = result.details;
-                aiModal.show();
-            } else {
-                modalTitleSpan.textContent = "Error";
-                modalBody.innerText = `Error fetching AI details: ${result.error || 'Unknown server error'}`;
-                aiModal.show();
-            }
-        } catch (error) {
-            console.error('Network or fetch error:', error);
-            alert('Failed to contact the AI service. Check the console for details.');
-        } finally {
-            button.disabled = false;
-            button.textContent = 'Ask AI';
-        }
-    });
-}
-
-// --- Modify the original Ask AI button setup to use the function ---
-// Find this block near the top of your original script:
-// const aiButtons = document.querySelectorAll('.ask-ai-btn');
-// aiButtons.forEach(button => {
-//     // ALL THE LISTENER CODE INSIDE HERE...
-// });
-// Replace it with this:
-const initialAiButtons = document.querySelectorAll('.ask-ai-btn');
-initialAiButtons.forEach(button => {
-    attachAskAiListener(button); // Use the new function
-});
-
-// --- END: New Code for Dynamic Task Adding ---
-            
-            // Select all "Ask AI" buttons
-            const aiButtons = document.querySelectorAll('.ask-ai-btn');
-
-            aiButtons.forEach(button => {
-                button.addEventListener('click', async () => {
-                    const taskText = button.dataset.taskText; // Get task text from data attribute
-                    button.disabled = true; // Disable button while processing
-                    button.textContent = 'Asking AI...'; // Provide feedback
-
-                    try {
-                        const response = await fetch('/ask-ai', { // Send request to our Flask route
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ task_text: taskText }) // Send task text as JSON
-                        });
-
-                        const result = await response.json(); // Parse JSON response from Flask
-
-                        // Get references to modal elements
-                        const modalTitleSpan = document.getElementById('modalTaskTitle');
-                        const modalBody = document.getElementById('aiResponseModalBody');
-                        const aiModalElement = document.getElementById('aiResponseModal');
-                        // Create a Bootstrap Modal instance from the element
-                        const aiModal = new bootstrap.Modal(aiModalElement);
-
-                        if (response.ok) {
-                             // --- NEW CODE TO SHOW MODAL ---
-                             modalTitleSpan.textContent = taskText; // Set the task title in the modal header
-                             // Use innerText to prevent potential HTML injection from AI response
-                            modalBody.innerText = result.details;
-                             aiModal.show(); // Show the modal
-                                // --- END OF NEW CODE ---
-                            } else {
-                                // --- Optional: Show error in modal too ---
-                             modalTitleSpan.textContent = "Error";
-                            modalBody.innerText = `Error fetching AI details: ${result.error || 'Unknown server error'}`;
-                             aiModal.show();
-                            // --- End of optional error handling ---
-                        }
-                    } catch (error) {
-                        // Handle network errors or issues reaching the server
-                        console.error('Network or fetch error:', error);
-                        alert('Failed to contact the AI service. Check the console for details.');
-                    } finally {
-                        // Re-enable button and restore text
-                        button.disabled = false;
-                        // Restore original text more robustly
-                        button.textContent = 'Ask AI';
-                    }
-                });
-            });
-        });
-    </script>
 <!-- === BOOTSTRAP MODAL for AI Response === -->
 <div class="modal fade" id="aiResponseModal" tabindex="-1" aria-labelledby="aiResponseModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg"> <!-- modal-lg makes it wider -->
@@ -272,10 +70,8 @@ initialAiButtons.forEach(button => {
       </div>
     </div>
   </div>
-  <!-- === END OF MODAL === -->
-  
-  <!-- Bootstrap JS Bundle goes here -->
-  <!-- Your Custom JS goes here -->
+    <!-- === END OF MODAL === -->
+    <!-- === Link to YOUR custom JS file === -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   </body>
-</body>
 </html>
