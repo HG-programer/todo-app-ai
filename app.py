@@ -28,7 +28,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 # --- End Initialization ---
 
-# !!! IMPORTANT: DATABASE RESET LOGIC (ADD THIS) !!!
+# !!! IMPORTANT: DATABASE RESET LOGIC !!!
 # Check for a reset flag environment variable BEFORE defining models
 if os.environ.get('RESET_DB') == 'TRUE':
     print("RESET_DB environment variable set to TRUE. Dropping and recreating tables.", file=sys.stderr)
@@ -38,12 +38,18 @@ if os.environ.get('RESET_DB') == 'TRUE':
             db.drop_all()
             print("Tables dropped successfully.", file=sys.stderr)
             # Recreate tables based on current models (defined below)
-            # Note: create_all needs the models defined, but drop_all does not necessarily.
-            # However, it's cleaner to keep create_all here too.
             db.create_all()
-            print("Tables recreated successfully based on models below.", file=sys.stderr)
+            print("Tables recreated successfully based on models.", file=sys.stderr) # Confirming after create_all
+            # ===>>> ADDED COMMIT AND ROLLBACK <<<===
+            db.session.commit() # Force commit the changes from drop/create
+            print("Database session committed after reset.", file=sys.stderr)
+            # ===>>> END OF ADDED COMMIT/ROLLBACK <<<===
         except Exception as e:
             print(f"Error during DB reset (drop/create): {e}", file=sys.stderr)
+            # ===>>> ADDED ROLLBACK ON ERROR <<<===
+            db.session.rollback() # Rollback if any error occurred
+            print("Database session rolled back due to error during reset.", file=sys.stderr)
+            # ===>>> END OF ADDED ROLLBACK <<<===
             # Decide if you want the app to continue or exit if reset fails
             # sys.exit("Failed to reset database. Exiting.")
     print("Database reset process finished.", file=sys.stderr)
@@ -55,6 +61,7 @@ class Task(db.Model):
     __tablename__ = 'task' # Good practice to explicitly name the table
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(200), nullable=False)
+    # Ensure completed column is defined correctly
     completed = db.Column(db.Boolean, nullable=False, default=False)
     # created_at = db.Column(db.DateTime, default=datetime.utcnow) # Keep commented for now
 
@@ -71,16 +78,18 @@ def index():
     try:
         # Order by ID or another field like created_at if you add it
         all_tasks = Task.query.order_by(Task.id).all()
+        print(f"Found {len(all_tasks)} tasks.", file=sys.stderr) # Add log
     except Exception as e:
         print(f"Error querying tasks: {e}", file=sys.stderr)
         # Check if the error is because the table doesn't exist (common on first run or after drop)
         # This specific check might vary depending on the DB driver
-        if "relation \"task\" does not exist" in str(e):
-             print("Task table likely doesn't exist yet.", file=sys.stderr)
-             all_tasks = [] # Return empty list if table isn't there
+        if "relation \"task\" does not exist" in str(e) or "UndefinedColumn" in str(e): # Check for UndefinedColumn too
+             print("Task table likely doesn't exist or has wrong schema.", file=sys.stderr)
+             all_tasks = [] # Return empty list if table isn't there or wrong schema
         else:
             # Handle other potential DB errors
             all_tasks = [] # Or handle differently
+            print(f"Unhandled database error during query: {e}", file=sys.stderr)
         # Optionally, flash a message to the user
     return render_template('index.html', tasks=all_tasks)
 
@@ -89,18 +98,21 @@ def index():
 def add_task():
     try:
         if not request.is_json:
+            print("Error adding task: Request not JSON", file=sys.stderr)
             return jsonify({"success": False, "error": "Request must be JSON"}), 400
 
         data = request.get_json()
         task_content = data.get('content') # Match the key sent by JavaScript ('content')
 
         if not task_content:
+            print("Error adding task: Content empty", file=sys.stderr)
             return jsonify({"success": False, "error": "Task content cannot be empty"}), 400
 
         # Create new task, default 'completed' is False
         new_task_obj = Task(content=task_content)
         db.session.add(new_task_obj)
         db.session.commit()
+        print(f"Added task ID: {new_task_obj.id}, Content: {new_task_obj.content}", file=sys.stderr) # Add log
 
         # Return the created task details (including ID) for potential frontend use
         return jsonify({
@@ -132,10 +144,12 @@ def ask_ai():
         if not task_text:
             return jsonify({"error": "Missing task text in request."}), 400
 
+        print(f"Asking AI about task: {task_text[:50]}...", file=sys.stderr) # Log request
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"Please provide more details, break down into sub-steps, or give tips for completing the following task:\n\nTask: \"{task_text}\""
         response = model.generate_content(prompt)
+        print(f"AI Response received for task: {task_text[:50]}...", file=sys.stderr) # Log response
         return jsonify({"details": response.text})
 
     except Exception as e:
@@ -153,6 +167,7 @@ def motivate_me():
             print("Error: GOOGLE_API_KEY env var not set.", file=sys.stderr)
             return jsonify({"error": "Server configuration error: Missing API key."}), 500
 
+        print("Requesting motivation from AI...", file=sys.stderr) # Log request
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = (
@@ -161,6 +176,7 @@ def motivate_me():
             "Keep it under 50 words."
         )
         response = model.generate_content(prompt)
+        print("Motivation received from AI.", file=sys.stderr) # Log response
         return jsonify({"motivation": response.text})
 
     except Exception as e:
@@ -175,12 +191,14 @@ def complete_task(task_id):
     try:
         # Find the task by its ID, return 404 if not found
         task = Task.query.get_or_404(task_id)
+        print(f"Toggling completion for task ID: {task_id}. Current status: {task.completed}", file=sys.stderr) # Log
 
         # Toggle the completed status
         task.completed = not task.completed
 
         # Commit the change to the database
         db.session.commit()
+        print(f"Task ID: {task_id} completion status updated to: {task.completed}", file=sys.stderr) # Log
 
         # Return a success response, including the new status
         return jsonify({"success": True, "completed_status": task.completed}), 200
@@ -213,6 +231,8 @@ with app.app_context():
 if __name__ == '__main__': # Corrected typo here from your original paste
     # Use Gunicorn's port binding in Render, but keep this for local testing
     port = int(os.environ.get('PORT', 5001)) # Changed default port just in case 5000 is busy
-    print(f"--- Starting Flask server on port {port} ---", file=sys.stderr)
-    # Set debug=False for deployment
+    print(f"--- Starting Flask development server on port {port} ---", file=sys.stderr)
+    # Set debug=False for deployment; Render uses Dockerfile CMD, not this block usually.
     app.run(debug=False, host='0.0.0.0', port=port)
+
+print("--- Python script finished initial setup ---", file=sys.stderr) # Add final log
