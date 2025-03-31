@@ -3,6 +3,8 @@ import sys
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import google.generativeai as genai
+# Import datetime if you plan to use the created_at field later
+# from datetime import datetime
 
 print("---Python script starting---")
 
@@ -14,6 +16,7 @@ if not DATABASE_URL:
     print("Error: DATABASE_URL environment variable not set.", file=sys.stderr)
     # sys.exit("Database URL not found. Exiting.") # Optional: Exit if critical
 
+# Ensure the scheme is postgresql for SQLAlchemy compatibility
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
@@ -25,13 +28,34 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 # --- End Initialization ---
 
-# --- Database Model Definition (ONLY ONCE) ---
+# !!! IMPORTANT: DATABASE RESET LOGIC (ADD THIS) !!!
+# Check for a reset flag environment variable BEFORE defining models
+if os.environ.get('RESET_DB') == 'TRUE':
+    print("RESET_DB environment variable set to TRUE. Dropping and recreating tables.", file=sys.stderr)
+    with app.app_context():
+        try:
+            # Drop all tables known to SQLAlchemy in this app context
+            db.drop_all()
+            print("Tables dropped successfully.", file=sys.stderr)
+            # Recreate tables based on current models (defined below)
+            # Note: create_all needs the models defined, but drop_all does not necessarily.
+            # However, it's cleaner to keep create_all here too.
+            db.create_all()
+            print("Tables recreated successfully based on models below.", file=sys.stderr)
+        except Exception as e:
+            print(f"Error during DB reset (drop/create): {e}", file=sys.stderr)
+            # Decide if you want the app to continue or exit if reset fails
+            # sys.exit("Failed to reset database. Exiting.")
+    print("Database reset process finished.", file=sys.stderr)
+# !!! END OF DATABASE RESET LOGIC !!!
+
+
+# --- Database Model Definition (Define models AFTER reset logic) ---
 class Task(db.Model):
+    __tablename__ = 'task' # Good practice to explicitly name the table
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(200), nullable=False)
-    # === ADD THIS FIELD ===
     completed = db.Column(db.Boolean, nullable=False, default=False)
-    # ======================
     # created_at = db.Column(db.DateTime, default=datetime.utcnow) # Keep commented for now
 
     def __repr__(self):
@@ -39,21 +63,24 @@ class Task(db.Model):
         return f'<Task {self.id}: {self.content} (Completed: {self.completed})>'
 # --- End Model Definition ---
 
-# tasks = [] # DELETE OR COMMENT OUT THIS LINE
-
 
 # === ROUTES ===
 
 @app.route('/')
 def index():
     try:
+        # Order by ID or another field like created_at if you add it
         all_tasks = Task.query.order_by(Task.id).all()
     except Exception as e:
-        # Handle case where DB might not be connected yet or table doesn't exist
-        # This might happen on the very first run before db.create_all() fully finishes
-        # or if DATABASE_URL is missing.
         print(f"Error querying tasks: {e}", file=sys.stderr)
-        all_tasks = [] # Show an empty list if DB query fails
+        # Check if the error is because the table doesn't exist (common on first run or after drop)
+        # This specific check might vary depending on the DB driver
+        if "relation \"task\" does not exist" in str(e):
+             print("Task table likely doesn't exist yet.", file=sys.stderr)
+             all_tasks = [] # Return empty list if table isn't there
+        else:
+            # Handle other potential DB errors
+            all_tasks = [] # Or handle differently
         # Optionally, flash a message to the user
     return render_template('index.html', tasks=all_tasks)
 
@@ -65,18 +92,25 @@ def add_task():
             return jsonify({"success": False, "error": "Request must be JSON"}), 400
 
         data = request.get_json()
-        task_content = data.get('task') # Use a different variable name like task_content
+        task_content = data.get('content') # Match the key sent by JavaScript ('content')
 
         if not task_content:
             return jsonify({"success": False, "error": "Task content cannot be empty"}), 400
 
-        # --- Database logic correctly placed ---
+        # Create new task, default 'completed' is False
         new_task_obj = Task(content=task_content)
         db.session.add(new_task_obj)
         db.session.commit()
-        # --- End database logic ---
 
-        return jsonify({"success": True, "task": new_task_obj.content}), 201
+        # Return the created task details (including ID) for potential frontend use
+        return jsonify({
+            "success": True,
+            "task": {
+                "id": new_task_obj.id,
+                "content": new_task_obj.content,
+                "completed": new_task_obj.completed
+            }
+        }), 201
 
     except Exception as e:
         db.session.rollback() # Rollback transaction on error
@@ -134,7 +168,6 @@ def motivate_me():
         error_message = f"An error occurred getting motivation: {e}"
         return jsonify({"error": error_message}), 500
 
-# <<< PASTE THIS NEW ROUTE FUNCTION >>>
 
 @app.route('/complete/<int:task_id>', methods=['POST'])
 def complete_task(task_id):
@@ -157,23 +190,29 @@ def complete_task(task_id):
         print(f"Error completing task {task_id}: {e}", file=sys.stderr)
         return jsonify({"success": False, "error": "Internal server error"}), 500
 
-# <<< END OF PASTE BLOCK >>>
 
-# --- Create Database Tables (Add this block!) ---
+# --- Create Database Tables (Ensures tables exist on normal startup) ---
+# This block runs AFTER the conditional reset and AFTER model definition
 with app.app_context():
-    print("Creating database tables if they don't exist...", file=sys.stderr)
+    print("Final check: Ensuring database tables exist...", file=sys.stderr)
     try:
+        # This will create tables if they don't exist.
+        # If RESET_DB was TRUE, they were already created, so this does nothing.
+        # If RESET_DB was FALSE/unset, this creates them if they're missing.
         db.create_all()
         print("Database tables checked/created.", file=sys.stderr)
     except Exception as e:
-        print(f"Error creating database tables: {e}", file=sys.stderr)
-        # You might want to handle this more gracefully depending on the error
+        # Catch specific errors if possible, e.g., connection errors
+        print(f"Error during final db.create_all(): {e}", file=sys.stderr)
+        # Decide if the app should exit if it can't ensure tables exist
+        # sys.exit("Could not ensure database tables exist. Exiting.")
 # --- End Create Tables ---
 
 
 # --- Main Run Block ---
-if __name__ == '__main__': # Corrected typo here
-    port = int(os.environ.get('PORT', 5000))
-    # Note: Setting debug=False is better for production/deployment stability
-    # Render might override this, but it's good practice.
+if __name__ == '__main__': # Corrected typo here from your original paste
+    # Use Gunicorn's port binding in Render, but keep this for local testing
+    port = int(os.environ.get('PORT', 5001)) # Changed default port just in case 5000 is busy
+    print(f"--- Starting Flask server on port {port} ---", file=sys.stderr)
+    # Set debug=False for deployment
     app.run(debug=False, host='0.0.0.0', port=port)
