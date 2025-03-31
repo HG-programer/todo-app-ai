@@ -72,7 +72,45 @@ def ask_ai():
         # Check for specific Gemini API error types if needed
         # Example: if hasattr(e, 'message'): error_message = e.message
         return jsonify({"error": error_message}), 500
+# <<< PASTE THIS CODE BLOCK (e.g., after ask_ai() function) >>>
 
+@app.route('/motivate-me', methods=['POST'])
+def motivate_me():
+    """Generates a motivational message using Gemini."""
+    try:
+        # --- 1. Get API Key ---
+        api_key = os.environ.get("GOOGLE_API_KEY")
+        if api_key is None:
+            print("Error: GOOGLE_API_KEY environment variable not set inside container.", file=sys.stderr)
+            return jsonify({"error": "Server configuration error: Missing API key."}), 500
+
+        # --- 2. Configure Gemini ---
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash') # Or gemini-pro
+
+        # --- 3. Craft a Fun Prompt ---
+        # You can get creative here! Add context if needed later.
+        prompt = (
+            "Generate a short, punchy, and slightly quirky motivational message "
+            "for someone using a to-do list app. Make it encouraging but maybe a little funny or unexpected. "
+            "Keep it under 50 words."
+            # Example alternative: "Give me a short, slightly sassy motivational quote about getting things done."
+            # Example alternative: "Generate a supportive message for someone feeling overwhelmed by their tasks."
+        )
+
+        # --- 4. Generate Content ---
+        response = model.generate_content(prompt)
+
+        # --- 5. Return Response ---
+        # Ensure the key here ('motivation') matches what the JavaScript expects
+        return jsonify({"motivation": response.text})
+
+    except Exception as e:
+        print(f"Error calling Gemini API for motivation: {e}", file=sys.stderr)
+        error_message = f"An error occurred while getting motivation: {e}"
+        return jsonify({"error": error_message}), 500
+
+# <<< END OF PASTE BLOCK >>>
 # <<< END OF PASTE BLOCK >>>
 if __name__ == '_main_':
     # Make it accessible on the network (important for Docker)

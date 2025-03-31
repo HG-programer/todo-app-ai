@@ -149,5 +149,73 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     // --- End of Section 3 ---
+    // --- SECTION 4: New Code for Motivate Me Button ---
 
+    // Select all "Motivate Me" buttons (even ones added later) using event delegation
+    // We listen on the taskList instead of attaching to each button directly
+    const taskListElement = document.getElementById('taskList'); // Use the task list ID
+
+    if (taskListElement) {
+        taskListElement.addEventListener('click', async (event) => {
+            // Check if the clicked element IS a motivate-me button
+            if (event.target && event.target.classList.contains('motivate-me-btn')) {
+                const button = event.target; // The button that was clicked
+                // Optional: Could get task context if needed later, but not now
+
+                button.disabled = true;
+                button.textContent = 'Motivating...';
+
+                try {
+                    // Call a NEW Flask endpoint for motivation
+                    const response = await fetch('/motivate-me', {
+                        method: 'POST', // Using POST, although GET could work too
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                        // No body needed for a generic motivation request
+                    });
+                    const result = await response.json();
+
+                    // --- Display response in the SAME modal ---
+                    const modalTitleSpan = document.getElementById('modalTaskTitle');
+                    const modalBody = document.getElementById('aiResponseModalBody');
+                    const aiModalElement = document.getElementById('aiResponseModal');
+
+                    if (!modalTitleSpan || !modalBody || !aiModalElement) {
+                        console.error("Modal elements not found!");
+                        alert("UI error: Cannot display AI response.");
+                        return; // Stop if modal isn't set up right
+                    }
+
+                    if (typeof bootstrap !== 'undefined') {
+                        const aiModal = new bootstrap.Modal(aiModalElement);
+                        if (response.ok) {
+                            modalTitleSpan.textContent = "A Dose of Motivation!"; // Generic Title
+                            modalBody.innerText = result.motivation; // Expecting 'motivation' key
+                            aiModal.show();
+                        } else {
+                            modalTitleSpan.textContent = "Error";
+                            modalBody.innerText = `Error fetching motivation: ${result.error || 'Unknown server error'}`;
+                            aiModal.show();
+                        }
+                    } else {
+                        console.error("Bootstrap JavaScript not loaded!");
+                        alert("Error: UI Component failed to load.");
+                    }
+                    // --- End of modal display ---
+
+                } catch (error) {
+                    console.error('Network or fetch error (Motivate Me):', error);
+                    alert('Failed to contact the AI motivation service. Check console.');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Motivate Me!';
+                }
+            }
+        });
+    } else {
+        console.error("Task list element not found for motivation listener!");
+    }
+
+    // --- End of Section 4 ---
 }); // End of DOMContentLoaded listener
