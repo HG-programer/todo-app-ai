@@ -51,9 +51,9 @@
         <ul id="taskList" class="list-group">
          {% for task in tasks %}
             <li class="list-group-item task-item">
-            <span class="task-text">{{ task }}</span>
+            <span class="task-text">{{ task.content }}</span>
             <div>
-            <button class="ask-ai-btn btn btn-info btn-sm" data-task-text="{{ task }}">Ask AI</button>
+            <button class="ask-ai-btn btn btn-info btn-sm" data-task-text="{{ task.content }}">Ask AI</button>
             <button class="motivate-me-btn btn btn-success btn-sm ms-2">Motivate Me!</button> <!-- Added ms-2 for margin start -->
          </div>
          </li>
