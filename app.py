@@ -29,11 +29,14 @@ db = SQLAlchemy(app)
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(200), nullable=False)
-    # completed = db.Column(db.Boolean, default=False) # Future field
-    # created_at = db.Column(db.DateTime, default=datetime.utcnow) # Future field (need import datetime)
+    # === ADD THIS FIELD ===
+    completed = db.Column(db.Boolean, nullable=False, default=False)
+    # ======================
+    # created_at = db.Column(db.DateTime, default=datetime.utcnow) # Keep commented for now
 
     def __repr__(self):
-        return f'<Task {self.id}: {self.content}>'
+        # Optionally add completed status to the representation
+        return f'<Task {self.id}: {self.content} (Completed: {self.completed})>'
 # --- End Model Definition ---
 
 # tasks = [] # DELETE OR COMMENT OUT THIS LINE
@@ -131,6 +134,30 @@ def motivate_me():
         error_message = f"An error occurred getting motivation: {e}"
         return jsonify({"error": error_message}), 500
 
+# <<< PASTE THIS NEW ROUTE FUNCTION >>>
+
+@app.route('/complete/<int:task_id>', methods=['POST'])
+def complete_task(task_id):
+    """Toggles the completion status of a task."""
+    try:
+        # Find the task by its ID, return 404 if not found
+        task = Task.query.get_or_404(task_id)
+
+        # Toggle the completed status
+        task.completed = not task.completed
+
+        # Commit the change to the database
+        db.session.commit()
+
+        # Return a success response, including the new status
+        return jsonify({"success": True, "completed_status": task.completed}), 200
+
+    except Exception as e:
+        db.session.rollback() # Rollback on error
+        print(f"Error completing task {task_id}: {e}", file=sys.stderr)
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+# <<< END OF PASTE BLOCK >>>
 
 # --- Create Database Tables (Add this block!) ---
 with app.app_context():

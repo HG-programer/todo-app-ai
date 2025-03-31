@@ -217,6 +217,67 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Task list element not found for motivation listener!");
     }
       // --- End of Section 4 ---
+          // --- SECTION 6: Task Completion Toggle Logic ---
+
+    // Use the existing taskListElement reference from Motivate Me section, or get it again
+    // const taskListElement = document.getElementById('taskList'); // Already defined above
+
+    if (taskListElement) {
+        taskListElement.addEventListener('change', async (event) => {
+            // Check if the changed element IS a task-checkbox
+            if (event.target && event.target.classList.contains('task-checkbox')) {
+                const checkbox = event.target;
+                const taskId = checkbox.dataset.taskId; // Get task ID from data attribute
+                const isCompleted = checkbox.checked; // Get the new checked state
+                const listItem = checkbox.closest('.task-item'); // Find the parent <li> element
+
+                // Optional: Optimistic UI update (update UI immediately)
+                // listItem.classList.toggle('task-completed', isCompleted);
+
+                try {
+                    // Call the NEW Flask endpoint to update the backend
+                    const response = await fetch(`/complete/${taskId}`, {
+                        method: 'POST', // Matches the method defined in Flask route
+                        headers: {
+                            'Content-Type': 'application/json',
+                            // Add CSRF token header here if you implement CSRF protection later
+                        }
+                        // No body needed, the ID is in the URL and the action is implicit
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok || !result.success) {
+                        // --- Rollback UI on error ---
+                        console.error('Error updating task status:', result.error || 'Unknown server error');
+                        // Revert checkbox state
+                        checkbox.checked = !isCompleted;
+                        // Revert styling class (if using optimistic update)
+                        // listItem.classList.toggle('task-completed', !isCompleted);
+                        alert(`Error updating task: ${result.error || 'Server error'}`);
+                    } else {
+                        // --- Confirm UI update on success ---
+                        // Update the class on the list item based on the *confirmed* status from server
+                        listItem.classList.toggle('task-completed', result.completed_status);
+                        // Ensure checkbox matches confirmed status (it usually will, but good practice)
+                        checkbox.checked = result.completed_status;
+                        console.log(`Task ${taskId} completion status updated to: ${result.completed_status}`);
+                    }
+
+                } catch (error) {
+                    // --- Rollback UI on fetch error ---
+                    console.error('Network or fetch error (Complete Task):', error);
+                    checkbox.checked = !isCompleted; // Revert checkbox state
+                    // listItem.classList.toggle('task-completed', !isCompleted); // Revert styling class
+                    alert('Failed to update task status. Check network connection.');
+                }
+            }
+        });
+    } else {
+        console.error("Task list element not found for completion listener!");
+    }
+
+    // --- End Section 6 ---
     // --- SECTION 5: Theme Toggling Logic ---
     const themeToggleButton = document.getElementById('theme-toggle-btn');
     const currentStoredTheme = localStorage.getItem('theme');

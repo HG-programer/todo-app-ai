@@ -72,3 +72,19 @@
     border-color: var(--card-border);
   } */
   /* Generally, let Bootstrap handle modal theming via data-bs-theme first */
+
+  /* Add this rule to the end of the file */
+
+.task-item.task-completed .task-text {
+  text-decoration: line-through;
+  color: #6c757d; /* Bootstrap's secondary text color (gray) */
+  /* Optional: Faded color in dark mode */
+  /* [data-bs-theme="dark"] & {
+      color: #adb5bd;
+  } */
+}
+
+/* Ensure checkbox stays aligned */
+.task-item .form-check-input {
+    margin-top: 0.1em; /* Adjust slightly if needed */
+}

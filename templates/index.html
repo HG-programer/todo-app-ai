@@ -49,18 +49,31 @@
         <h2>Tasks</h2>
         <!-- Added id="taskList" -->
         <ul id="taskList" class="list-group">
-         {% for task in tasks %}
-            <li class="list-group-item task-item">
-            <span class="task-text">{{ task.content }}</span>
-            <div>
-            <button class="ask-ai-btn btn btn-info btn-sm" data-task-text="{{ task.content }}">Ask AI</button>
-            <button class="motivate-me-btn btn btn-success btn-sm ms-2">Motivate Me!</button> <!-- Added ms-2 for margin start -->
-         </div>
-         </li>
-         {% else %}
-            <!-- Added id="noTasksMessage" -->
-            <li id="noTasksMessage" class="list-group-item">No tasks yet!</li>
-            {% endfor %}
+          {% for task in tasks %}
+          <!-- === MODIFIED LI: Add class if completed === -->
+          <li class="list-group-item task-item {% if task.completed %}task-completed{% endif %}">
+
+              <!-- === ADD CHECKBOX HERE === -->
+              <input class="form-check-input task-checkbox me-2"
+                     type="checkbox"
+                     value=""
+                     id="task-{{ task.id }}"
+                     data-task-id="{{ task.id }}"
+                     {% if task.completed %}checked{% endif %}>
+              <!-- ========================== -->
+
+              <!-- Access the 'content' attribute for display -->
+              <span class="task-text">{{ task.content }}</span>
+              <div>
+                  <!-- Access the 'content' attribute for the data-* attribute -->
+                  <button class="ask-ai-btn btn btn-info btn-sm" data-task-text="{{ task.content }}">Ask AI</button>
+                  <button class="motivate-me-btn btn btn-success btn-sm ms-2">Motivate Me!</button>
+                  <!-- Delete button will go here later -->
+              </div>
+          </li>
+       {% else %}
+          <!-- ... no changes needed here ... -->
+       {% endfor %}
             </ul>
           </div> <!-- End of container -->
 
