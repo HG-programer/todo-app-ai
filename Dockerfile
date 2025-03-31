@@ -21,4 +21,5 @@ COPY . .
 
 # Run app.py using Gunicorn when the container launches
 # Gunicorn will listen on the port specified by the PORT environment variable (provided by Render)
-CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "app:app"]
+# Use /bin/sh -c to enable shell variable expansion for $PORT
+CMD ["/bin/sh", "-c", "gunicorn --bind 0.0.0.0:$PORT app:app"]
