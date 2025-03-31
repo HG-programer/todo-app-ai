@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiModalElement = document.getElementById('aiResponseModal'); // Modal container
     const modalTitleSpan = document.getElementById('modalTaskTitle'); // Modal title element
     const modalBody = document.getElementById('aiResponseModalBody'); // Modal body element
+    const noTasksMsg = document.getElementById('noTasksMessage'); // Message shown when list is empty
     // --- End Section 1 ---
 
 
@@ -17,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
             const taskText = taskInput.value.trim();
             if (taskText === "") {
-                alert("Task content cannot be empty."); // Simple validation
+                alert("Task content cannot be empty.");
                 return;
             }
 
@@ -26,35 +27,30 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.textContent = 'Adding...';
 
             try {
-                const response = await fetch("/add", { // Correct endpoint
+                const response = await fetch("/add", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    // === FIXED: Send 'content' key ===
                     body: JSON.stringify({ content: taskText }) // Backend expects 'content'
                 });
-                // ==================================
 
                 const result = await response.json();
 
                 if (response.status === 201 && result.success) {
-                    // === FIXED: Pass the full task object from result ===
                     addNewTaskToList(result.task); // result.task contains {id, content, completed}
-                    // ==================================================
                     taskInput.value = ''; // Clear input field
-                    const noTasksMsg = document.getElementById('noTasksMessage');
-                    if (noTasksMsg) {
-                        noTasksMsg.style.display = 'none'; // Hide 'no tasks' message
-                    }
+                    // The 'no tasks' message is handled inside addNewTaskToList now
                 } else {
-                    console.error("Error adding task:", result.error);
+                    console.error("Error adding task:", result.error || `Status: ${response.status}`);
                     alert(`Error adding task: ${result.error || 'Unknown server error'}`);
                 }
 
             } catch (error) {
+                // This catches network errors or issues with fetch/await itself
                 console.error('Network or fetch error adding task:', error);
-                alert('Failed to add task. Check the console for details.');
+                // Display the JavaScript error caught in the alert
+                alert(`Failed to add task. Error: ${error.message}. Check the console for details.`);
             } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = 'Add Task';
@@ -66,43 +62,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- End Section 2 ---
 
 
-    // --- SECTION 3: Task List Event Delegation (for Checkbox, Ask AI, Motivate Me) ---
+    // --- SECTION 3: Task List Event Delegation ---
     if (taskList) {
+        // --- CLICK Listener (for Buttons) ---
         taskList.addEventListener('click', async (event) => {
             const target = event.target;
+            const button = target.closest('button'); // Get the button element clicked or its parent
 
-            // --- Handle 'Ask AI' button clicks ---
-            if (target.classList.contains('ask-ai-btn')) {
-                const button = target;
-                const taskText = button.dataset.taskText; // Get task text from data attribute
-                handleAskAiClick(button, taskText); // Call specific handler
+            if (!button) return; // Exit if the click wasn't on or inside a button
+
+            // Handle 'Ask AI' button clicks
+            if (button.classList.contains('ask-ai-btn')) {
+                const taskText = button.dataset.taskText;
+                handleAskAiClick(button, taskText);
             }
-
-            // --- Handle 'Motivate Me' button clicks ---
-            else if (target.classList.contains('motivate-me-btn')) {
-                const button = target;
-                handleMotivateMeClick(button); // Call specific handler
+            // Handle 'Motivate Me' button clicks
+            else if (button.classList.contains('motivate-me-btn')) {
+                handleMotivateMeClick(button);
+            }
+            // Handle 'Delete' button clicks <<--- CORRECT PLACE FOR DELETE LISTENER
+            else if (button.classList.contains('delete-btn')) {
+                const taskId = button.dataset.taskId;
+                handleDeleteClick(button, taskId);
             }
         });
 
-        // Separate listener for 'change' events specifically for checkboxes
+        // --- CHANGE Listener (specifically for Checkboxes) ---
         taskList.addEventListener('change', async (event) => {
              const target = event.target;
-             // --- Handle Checkbox changes ---
-            if (target.classList.contains('task-checkbox')) {
+             // Handle Checkbox changes
+            if (target.classList.contains('task-checkbox') && target.type === 'checkbox') {
                 const checkbox = target;
                 const taskId = checkbox.dataset.taskId;
-                handleCheckboxChange(checkbox, taskId); // Call specific handler
+                handleCheckboxChange(checkbox, taskId);
             }
-            // Inside the click listener, after the motivate-me check:
-
-            // === ADD THIS BLOCK ===
-            else if (target.classList.contains('delete-btn')) {
-            const button = target;
-            const taskId = button.dataset.taskId;
-            handleDeleteClick(button, taskId); // Call the handler
-}
-// =====================
         });
 
     } else {
@@ -114,40 +107,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- SECTION 4: Helper Function to Add New Task LI Element ---
     function addNewTaskToList(task) { // Expects {id, content, completed}
         if (!taskList || !task || typeof task.id === 'undefined') {
-             console.error("Cannot add task to list. Invalid input or list element missing.", task);
-             return;
+            console.error("Cannot add task to list. Invalid input or list element missing.", task);
+            return;
         }
-        
-        // --- ADD THIS ---
-        const deleteButton = document.createElement('button');
-        deleteButton.className = 'delete-btn btn btn-danger btn-sm'; // Match HTML button class
-        deleteButton.textContent = 'Delete';
-        deleteButton.dataset.taskId = task.id; // Set the task ID
-        // ---------------
-
-        // --- Make sure to append it ---
-        buttonDiv.appendChild(aiButton);
-        buttonDiv.appendChild(motivateButton);
-        buttonDiv.appendChild(deleteButton); // <-- APPEND IT HERE
-        // ------------------------------
 
         const li = document.createElement('li');
-        // === ADDED: Apply completed class based on task status ===
+        // Use Bootstrap classes for list group item + flexbox for layout
         li.className = `list-group-item task-item d-flex justify-content-between align-items-center ${task.completed ? 'task-completed' : ''}`;
-        li.dataset.taskId = task.id; // Add task ID to the li itself, might be useful
+        li.dataset.taskId = task.id;
 
-        // Div for checkbox and task text
+        // Div for checkbox and task text (takes up remaining space)
         const taskContentDiv = document.createElement('div');
-        taskContentDiv.className = 'd-flex align-items-center'; // Use flexbox for alignment
+        taskContentDiv.className = 'd-flex align-items-center me-3'; // Add margin-end for spacing before buttons
 
-        // Checkbox
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        checkbox.className = 'form-check-input task-checkbox me-2'; // Added margin-end
-        checkbox.checked = task.completed; // Set initial state
-        checkbox.dataset.taskId = task.id; // Crucial for identifying which task to update
+        checkbox.className = 'form-check-input task-checkbox me-2'; // Margin end for space after checkbox
+        checkbox.checked = task.completed;
+        checkbox.dataset.taskId = task.id;
 
-        // Task Text Span
         const span = document.createElement('span');
         span.className = 'task-text';
         span.textContent = task.content;
@@ -155,31 +133,41 @@ document.addEventListener('DOMContentLoaded', () => {
         taskContentDiv.appendChild(checkbox);
         taskContentDiv.appendChild(span);
 
-        // Div for buttons
+        // Div for ALL buttons (groups them together)
         const buttonDiv = document.createElement('div');
-        buttonDiv.className = 'task-buttons'; // Add a class for potential styling
+        buttonDiv.className = 'task-buttons btn-group'; // Use Bootstrap btn-group for spacing/styling if desired
 
-        // Ask AI Button
+        // Create ALL buttons
         const aiButton = document.createElement('button');
-        aiButton.className = 'ask-ai-btn btn btn-info btn-sm me-1'; // Added margin-end
+        aiButton.className = 'ask-ai-btn btn btn-info btn-sm'; // Removed extra margins, btn-group handles it
         aiButton.textContent = 'Ask AI';
-        aiButton.dataset.taskText = task.content; // Use task.content
+        aiButton.dataset.taskText = task.content; // Make sure task.content is correct
 
-        // Motivate Me Button
         const motivateButton = document.createElement('button');
-        motivateButton.className = 'motivate-me-btn btn btn-success btn-sm'; // Example styling
+        motivateButton.className = 'motivate-me-btn btn btn-success btn-sm';
         motivateButton.textContent = 'Motivate Me!';
-        // No specific data needed unless you want task context later
 
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'delete-btn btn btn-danger btn-sm';
+        deleteButton.textContent = 'Delete';
+        deleteButton.dataset.taskId = task.id;
+
+        // Append buttons to buttonDiv
         buttonDiv.appendChild(aiButton);
         buttonDiv.appendChild(motivateButton);
+        buttonDiv.appendChild(deleteButton);
 
         // Assemble the list item
-        li.appendChild(taskContentDiv);
-        li.appendChild(buttonDiv);
+        li.appendChild(taskContentDiv); // Checkbox and Text
+        li.appendChild(buttonDiv);    // Buttons div
 
         // Add the new list item to the list
         taskList.appendChild(li);
+
+        // Hide 'no tasks' message if it exists and was visible
+        if (noTasksMsg) {
+            noTasksMsg.style.display = 'none';
+        }
     }
     // --- End Section 4 ---
 
@@ -188,7 +176,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handles 'Ask AI' button clicks
     async function handleAskAiClick(button, taskText) {
+        // Safety check before sending request
+        if (!taskText || taskText.trim() === "") {
+            alert("Cannot ask AI about an empty task.");
+            return;
+        }
+
         button.disabled = true;
+        const originalText = button.textContent; // Store original text
         button.textContent = 'Asking...';
 
         try {
@@ -198,35 +193,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ task_text: taskText })
             });
             const result = await response.json();
-            displayModalResponse(taskText, result, response.ok, "Error fetching AI details:");
+            // Pass the task text itself as the title for the modal
+            displayModalResponse(`AI Details for "${taskText}"`, result, response.ok, "Error fetching AI details:");
         } catch (error) {
             console.error('Network or fetch error (Ask AI):', error);
-            alert('Failed to contact the AI service. Check the console.');
+            displayModalResponse("Network Error", { error: error.message }, false, "Could not contact AI service:");
         } finally {
             button.disabled = false;
-            button.textContent = 'Ask AI';
+            button.textContent = originalText; // Restore original text
         }
     }
 
     // Handles 'Motivate Me' button clicks
     async function handleMotivateMeClick(button) {
         button.disabled = true;
+        const originalText = button.textContent;
         button.textContent = 'Thinking...';
 
         try {
             const response = await fetch('/motivate-me', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
+                // No body needed for this request as per your backend
             });
             const result = await response.json();
-            // Adjust title and expected key for motivation response
-            displayModalResponse("A Dose of Motivation!", result, response.ok, "Error fetching motivation:", 'motivation');
+            displayModalResponse("A Dose of Motivation!", result, response.ok, "Error fetching motivation:", 'motivation'); // Specify 'motivation' key
         } catch (error) {
             console.error('Network or fetch error (Motivate Me):', error);
-            alert('Failed to contact the AI motivation service. Check console.');
+            displayModalResponse("Network Error", { error: error.message }, false, "Could not get motivation:");
         } finally {
             button.disabled = false;
-            button.textContent = 'Motivate Me!';
+            button.textContent = originalText;
         }
     }
 
@@ -234,33 +231,33 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleCheckboxChange(checkbox, taskId) {
         const isCompleted = checkbox.checked;
         const listItem = checkbox.closest('.task-item');
+        if (!listItem) return; // Should not happen if checkbox is in a task item
 
-        // Optimistic UI update (optional but good for perceived speed)
+        // Optimistic UI update
         listItem.classList.toggle('task-completed', isCompleted);
 
         try {
             const response = await fetch(`/complete/${taskId}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                 // No body needed if backend just toggles based on ID
             });
             const result = await response.json();
 
             if (!response.ok || !result.success) {
-                // --- Rollback UI on error ---
+                // Rollback UI on server error
                 console.error('Error updating task status:', result.error || 'Unknown server error');
                 checkbox.checked = !isCompleted; // Revert checkbox
                 listItem.classList.toggle('task-completed', !isCompleted); // Revert style
                 alert(`Error updating task: ${result.error || 'Server error'}`);
             } else {
-                // --- Confirm UI based on server response ---
-                // This ensures UI matches the actual DB state if optimistic update was wrong
-                // or if there was a slight delay and user clicked again.
+                // Confirm UI matches actual state from server response
                 checkbox.checked = result.completed_status;
                 listItem.classList.toggle('task-completed', result.completed_status);
                 console.log(`Task ${taskId} completion status updated to: ${result.completed_status}`);
             }
         } catch (error) {
-            // --- Rollback UI on network error ---
+            // Rollback UI on network error
             console.error('Network or fetch error (Complete Task):', error);
             checkbox.checked = !isCompleted; // Revert checkbox
             listItem.classList.toggle('task-completed', !isCompleted); // Revert style
@@ -268,26 +265,75 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Helper function to display modal response ---
-    function displayModalResponse(title, result, isOk, errorPrefix, responseKey = 'details') {
-         if (!modalTitleSpan || !modalBody || !aiModalElement) {
-            console.error("Modal elements not found!");
-            alert("UI error: Cannot display AI response.");
+    // Handles Delete button clicks <<--- DEFINITION MOVED HERE
+    async function handleDeleteClick(button, taskId) {
+        if (!confirm(`Are you sure you want to delete task ID: ${taskId}? This cannot be undone.`)) {
             return;
         }
-         if (typeof bootstrap === 'undefined') {
-             console.error("Bootstrap JavaScript not loaded!");
-             alert("Error: UI Component failed to load.");
+
+        button.disabled = true;
+        button.textContent = 'Deleting...';
+        const listItem = button.closest('.task-item');
+
+        try {
+            const response = await fetch(`/delete/${taskId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                if (listItem) {
+                    listItem.remove();
+                    console.log(`Task ${taskId} deleted successfully from DOM.`);
+                    // Check if list is now empty and show message
+                    if (taskList && taskList.children.length === 0 && noTasksMsg) {
+                        noTasksMsg.style.display = 'block';
+                    }
+                } else {
+                    console.warn(`Could not find list item for task ${taskId} to remove. Attempting reload.`);
+                    location.reload(); // Fallback: reload the page if UI element not found
+                }
+            } else {
+                console.error('Error deleting task:', result.error || 'Unknown server error');
+                alert(`Error deleting task: ${result.error || 'Server error'}`);
+                button.disabled = false; // Re-enable on failure
+                button.textContent = 'Delete';
+            }
+        } catch (error) {
+            console.error('Network or fetch error (Delete Task):', error);
+            alert('Failed to delete task. Check network connection.');
+            button.disabled = false; // Re-enable on network failure
+            button.textContent = 'Delete';
+        }
+    }
+
+
+    // Helper function to display modal response (handles AI details and Motivation)
+    function displayModalResponse(title, result, isOk, errorPrefix, responseKey = 'details') {
+         if (!modalTitleSpan || !modalBody || !aiModalElement) {
+            console.error("Modal elements not found! Cannot display response.");
+            // Attempt to alert the raw message if modal elements are missing
+            alert(isOk ? (result[responseKey] || "Received empty response.") : `${errorPrefix} ${result.error || 'UI Error: Modal components missing.'}`);
+            return;
+         }
+         if (typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+             console.error("Bootstrap JavaScript or Modal component not loaded!");
+             alert("Error: UI Component (Modal) failed to load.");
              return;
          }
 
-        const aiModal = bootstrap.Modal.getOrCreateInstance(aiModalElement); // Safer way to get/create instance
+        const aiModal = bootstrap.Modal.getOrCreateInstance(aiModalElement);
+
+        modalTitleSpan.textContent = title; // Set title regardless of success/error
 
         if (isOk) {
-            modalTitleSpan.textContent = title;
-            modalBody.innerText = result[responseKey] || "Received empty response."; // Use the specified key
+             // Format the response text slightly for better readability in the modal
+            const formattedText = (result[responseKey] || "Received empty response.")
+                .replace(/\n/g, '<br>'); // Replace newlines with <br> for HTML display
+            modalBody.innerHTML = formattedText; // Use innerHTML since we added <br>
         } else {
-            modalTitleSpan.textContent = "Error";
             modalBody.innerText = `${errorPrefix} ${result.error || 'Unknown server error'}`;
         }
         aiModal.show();
@@ -295,104 +341,58 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- End Section 5 ---
 
 
-    // --- SECTION 6: Initial Setup for Existing Tasks (Checkboxes/Buttons) ---
-    // Add listeners to any tasks already loaded on the page
+    // --- SECTION 6: Initial Setup for Existing Tasks ---
+    // Ensures tasks loaded server-side get the correct 'task-completed' class applied initially
     document.querySelectorAll('.task-checkbox').forEach(checkbox => {
-        // Listener attached via event delegation, but set initial class
         const listItem = checkbox.closest('.task-item');
         if (listItem) {
              listItem.classList.toggle('task-completed', checkbox.checked);
         }
-
-        // --- ADD THIS ENTIRE FUNCTION ---
-// Handles Delete button clicks
-async function handleDeleteClick(button, taskId) {
-    // Confirmation dialog
-    if (!confirm(`Are you sure you want to delete task ID: ${taskId}? This cannot be undone.`)) {
-        return; // Stop if user clicks Cancel
-    }
-
-    button.disabled = true;
-    button.textContent = 'Deleting...';
-    const listItem = button.closest('.task-item'); // Get the parent <li> element
-
-    try {
-        const response = await fetch(`/delete/${taskId}`, {
-            method: 'POST',
-            headers: {
-                 'Content-Type': 'application/json'
-            }
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-            // Remove the task item from the list on success
-            if (listItem) {
-                listItem.remove();
-                console.log(`Task ${taskId} deleted successfully from DOM.`);
-                // Check if list is now empty
-                 if (taskList && taskList.children.length === 0) {
-                     const noTasksMsg = document.getElementById('noTasksMessage');
-                     if (noTasksMsg) {
-                         noTasksMsg.style.display = 'block'; // Show 'no tasks' message
-                     }
-                 }
-            } else {
-                 console.warn(`Could not find list item for task ${taskId} to remove.`);
-            }
-        } else {
-            // Re-enable button on failure
-            console.error('Error deleting task:', result.error || 'Unknown server error');
-            alert(`Error deleting task: ${result.error || 'Server error'}`);
-            button.disabled = false;
-            button.textContent = 'Delete';
-        }
-
-    } catch (error) {
-        // Re-enable button on network failure
-        console.error('Network or fetch error (Delete Task):', error);
-        alert('Failed to delete task. Check network connection.');
-        button.disabled = false;
-        button.textContent = 'Delete';
-    }
-}
-// --- END OF FUNCTION TO ADD ---
-
     });
-    // Ask AI/Motivate Me listeners are handled by delegation in Section 3
+
+    // Check if the task list is empty on initial load and show message
+    if (taskList && taskList.children.length === 0 && noTasksMsg) {
+         noTasksMsg.style.display = 'block';
+     } else if (noTasksMsg) {
+        noTasksMsg.style.display = 'none';
+     }
     // --- End Section 6 ---
 
 
     // --- SECTION 7: Theme Toggling Logic ---
-    const currentStoredTheme = localStorage.getItem('theme');
-    const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+    (function applyThemePreference() { // IIFE to avoid polluting global scope
+        const currentStoredTheme = localStorage.getItem('theme');
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
 
-    const applyTheme = (theme) => {
-        let buttonText = "Toggle Theme 🌓"; // Default Light
-        if (theme === 'dark') {
-            document.documentElement.setAttribute('data-bs-theme', 'dark');
-            buttonText = "Toggle Theme ☀️"; // Dark
-        } else {
-            document.documentElement.removeAttribute('data-bs-theme');
+        const applyTheme = (theme) => {
+            let buttonText = "Dark Mode 🌓"; // Default for Light theme button
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-bs-theme', 'dark');
+                buttonText = "Light Mode ☀️"; // For Dark theme button
+            } else {
+                document.documentElement.removeAttribute('data-bs-theme');
+            }
+            if(themeToggleButton) themeToggleButton.textContent = buttonText;
+        };
+
+        let initialTheme = currentStoredTheme;
+        if (!initialTheme) {
+             initialTheme = prefersDarkScheme.matches ? 'dark' : 'light';
         }
-         if(themeToggleButton) themeToggleButton.textContent = buttonText;
-    };
+        applyTheme(initialTheme);
 
-    // Determine and apply initial theme
-    let initialTheme = currentStoredTheme || (prefersDarkScheme.matches ? 'dark' : 'light');
-    applyTheme(initialTheme);
-
-    if (themeToggleButton) {
-        themeToggleButton.addEventListener('click', () => {
-            let currentTheme = document.documentElement.hasAttribute('data-bs-theme') ? 'dark' : 'light';
-            let newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            applyTheme(newTheme);
-            localStorage.setItem('theme', newTheme);
-        });
-    } else {
-        console.error("Theme toggle button (#theme-toggle-btn) not found!");
-    }
+        if (themeToggleButton) {
+            themeToggleButton.addEventListener('click', () => {
+                // Read the current theme *directly* from the attribute for consistency
+                let currentTheme = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+                let newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                applyTheme(newTheme);
+                localStorage.setItem('theme', newTheme);
+            });
+        } else {
+            console.warn("Theme toggle button (#theme-toggle-btn) not found!");
+        }
+    })(); // Immediately execute the theme setup function
     // --- END SECTION 7 ---
 
 }); // End of DOMContentLoaded listener
