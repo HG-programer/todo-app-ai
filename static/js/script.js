@@ -94,6 +94,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const taskId = checkbox.dataset.taskId;
                 handleCheckboxChange(checkbox, taskId); // Call specific handler
             }
+            // Inside the click listener, after the motivate-me check:
+
+            // === ADD THIS BLOCK ===
+            else if (target.classList.contains('delete-btn')) {
+            const button = target;
+            const taskId = button.dataset.taskId;
+            handleDeleteClick(button, taskId); // Call the handler
+}
+// =====================
         });
 
     } else {
@@ -108,6 +117,19 @@ document.addEventListener('DOMContentLoaded', () => {
              console.error("Cannot add task to list. Invalid input or list element missing.", task);
              return;
         }
+        
+        // --- ADD THIS ---
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'delete-btn btn btn-danger btn-sm'; // Match HTML button class
+        deleteButton.textContent = 'Delete';
+        deleteButton.dataset.taskId = task.id; // Set the task ID
+        // ---------------
+
+        // --- Make sure to append it ---
+        buttonDiv.appendChild(aiButton);
+        buttonDiv.appendChild(motivateButton);
+        buttonDiv.appendChild(deleteButton); // <-- APPEND IT HERE
+        // ------------------------------
 
         const li = document.createElement('li');
         // === ADDED: Apply completed class based on task status ===
@@ -281,6 +303,62 @@ document.addEventListener('DOMContentLoaded', () => {
         if (listItem) {
              listItem.classList.toggle('task-completed', checkbox.checked);
         }
+
+        // --- ADD THIS ENTIRE FUNCTION ---
+// Handles Delete button clicks
+async function handleDeleteClick(button, taskId) {
+    // Confirmation dialog
+    if (!confirm(`Are you sure you want to delete task ID: ${taskId}? This cannot be undone.`)) {
+        return; // Stop if user clicks Cancel
+    }
+
+    button.disabled = true;
+    button.textContent = 'Deleting...';
+    const listItem = button.closest('.task-item'); // Get the parent <li> element
+
+    try {
+        const response = await fetch(`/delete/${taskId}`, {
+            method: 'POST',
+            headers: {
+                 'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // Remove the task item from the list on success
+            if (listItem) {
+                listItem.remove();
+                console.log(`Task ${taskId} deleted successfully from DOM.`);
+                // Check if list is now empty
+                 if (taskList && taskList.children.length === 0) {
+                     const noTasksMsg = document.getElementById('noTasksMessage');
+                     if (noTasksMsg) {
+                         noTasksMsg.style.display = 'block'; // Show 'no tasks' message
+                     }
+                 }
+            } else {
+                 console.warn(`Could not find list item for task ${taskId} to remove.`);
+            }
+        } else {
+            // Re-enable button on failure
+            console.error('Error deleting task:', result.error || 'Unknown server error');
+            alert(`Error deleting task: ${result.error || 'Server error'}`);
+            button.disabled = false;
+            button.textContent = 'Delete';
+        }
+
+    } catch (error) {
+        // Re-enable button on network failure
+        console.error('Network or fetch error (Delete Task):', error);
+        alert('Failed to delete task. Check network connection.');
+        button.disabled = false;
+        button.textContent = 'Delete';
+    }
+}
+// --- END OF FUNCTION TO ADD ---
+
     });
     // Ask AI/Motivate Me listeners are handled by delegation in Section 3
     // --- End Section 6 ---

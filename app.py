@@ -213,6 +213,31 @@ def complete_task(task_id):
         print(f"Error completing task {task_id}: {e}", file=sys.stderr)
         return jsonify({"success": False, "error": "Internal server error"}), 500
 
+@app.route('/delete/<int:task_id>', methods=['POST'])
+def delete_task(task_id):
+    """Deletes a task by its ID."""
+    try:
+        # Find the task by its ID
+        task_to_delete = Task.query.get_or_404(task_id)
+
+        # Delete the task from the database session
+        db.session.delete(task_to_delete)
+
+        # Commit the changes to the database
+        db.session.commit()
+
+        print(f"Task with ID {task_id} deleted successfully.") # Server log
+        return jsonify({'success': True, 'message': 'Task deleted successfully'})
+
+    except Exception as e:
+        # Rollback in case of error during deletion
+        db.session.rollback()
+        print(f"Error deleting task {task_id}: {e}") # Server log
+        # Return a generic server error message
+        return jsonify({'success': False, 'error': 'Failed to delete task due to a server error.'}), 500
+
+# Make sure Task model and db are defined before this route
+# Make sure jsonify is imported from flask
 
 # --- Create Database Tables (Ensures tables exist on normal startup) ---
 # This block runs AFTER the conditional reset and AFTER model definition
