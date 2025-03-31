@@ -8,20 +8,17 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install any needed packages specified in requirements.txt
+# Ensure gunicorn is in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code into the container at /app
 COPY . .
 
-# Make port 5000 available to the world outside this container
-EXPOSE 5000
+# Define environment variable (FLASK_APP is often not needed by gunicorn)
+# ENV FLASK_APP=app.py # Not strictly needed by Gunicorn usually
 
-# Define environment variable (optional but good practice)
-ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
+# EXPOSE is informational; Render uses $PORT for binding.
 
-# Run app.py when the container launches
-# Use gunicorn for production later, but flask run is fine for now
-CMD ["flask", "run"]
-# Alternatively, directly run the python script:
-# CMD ["python", "app.py"]
+# Run app.py using Gunicorn when the container launches
+# Gunicorn will listen on the port specified by the PORT environment variable (provided by Render)
+CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "app:app"]

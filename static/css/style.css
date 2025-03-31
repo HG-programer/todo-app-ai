@@ -88,3 +88,6 @@
 .task-item .form-check-input {
     margin-top: 0.1em; /* Adjust slightly if needed */
 }
+[data-bs-theme="dark"] .task-item.task-completed .task-text {
+  color: #adb5bd; /* Lighter gray for dark mode (Bootstrap's default muted text) */
+}
