@@ -29,40 +29,6 @@ db = SQLAlchemy(app)
 # --- End Initialization ---
 
 
-# --- ADD THIS TEMPORARY BLOCK ---
-# WARNING: TEMPORARY ROUTE FOR DATABASE SCHEMA RESET - REMOVE AFTER USE!
-#          THIS WILL DELETE ALL EXISTING DATA IN YOUR TABLES!
-@app.route('/admin/do-reset-db-now/<secret_key>')
-def reset_database_schema(secret_key):
-    # CHANGE THIS TO YOUR OWN SECRET KEY!
-    expected_key = os.environ.get("RESET_SECRET_KEY", "default-insecure-key-change-me")
-
-    if secret_key == expected_key:
-        try:
-            print("ADMIN: Received valid key. Resetting database schema...")
-            # Ensure operations happen within app context
-            with app.app_context():
-                 db.drop_all()
-                 print("ADMIN: db.drop_all() executed.")
-                 db.create_all()
-                 print("ADMIN: db.create_all() executed.")
-                 # No explicit commit needed here as create_all usually handles it,
-                 # but adding one won't hurt if issues persist.
-                 # db.session.commit()
-            print("ADMIN: Database schema reset successfully.")
-            return "Database schema has been reset. All data lost. REMOVE THIS ROUTE NOW!", 200
-        except Exception as e:
-            print(f"ADMIN: Error during database reset: {e}")
-            # Rollback in case of partial failure
-            with app.app_context():
-                db.session.rollback()
-            return f"Error during database reset: {e}", 500
-    else:
-        print("ADMIN: Invalid reset key attempted.")
-        # Return 404 Not Found to avoid revealing the route exists
-        return "Not Found", 404
-# --- END OF TEMPORARY BLOCK ---
-
 # Your other routes follow...
 # @app.route('/')
 # def index():
