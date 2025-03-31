@@ -216,6 +216,46 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.error("Task list element not found for motivation listener!");
     }
+      // --- End of Section 4 ---
+    // --- SECTION 5: Theme Toggling Logic ---
+    const themeToggleButton = document.getElementById('theme-toggle-btn');
+    const currentStoredTheme = localStorage.getItem('theme');
+    const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
 
-    // --- End of Section 4 ---
+    // Function to apply the theme to the <html> element using data-bs-theme attribute
+    const applyTheme = (theme) => {
+        if (theme === 'dark') {
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+             // Optional: Change button text/icon for dark mode
+             if(themeToggleButton) themeToggleButton.textContent = "Toggle Theme ☀️";
+        } else {
+            document.documentElement.removeAttribute('data-bs-theme');
+             // Optional: Change button text/icon for light mode
+             if(themeToggleButton) themeToggleButton.textContent = "Toggle Theme 🌓";
+        }
+    };
+
+    // Determine and apply the initial theme on page load
+    let initialTheme = 'light'; // Default to light
+    if (currentStoredTheme) {
+        initialTheme = currentStoredTheme; // Use stored preference if exists
+    } else if (prefersDarkScheme.matches) {
+        initialTheme = 'dark'; // Use system preference if no stored preference
+    }
+    applyTheme(initialTheme); // Apply the determined theme
+
+    // Add click listener to the toggle button
+    if (themeToggleButton) {
+        themeToggleButton.addEventListener('click', () => {
+            // Determine the new theme by checking the current attribute
+            let newTheme = document.documentElement.hasAttribute('data-bs-theme') ? 'light' : 'dark';
+            applyTheme(newTheme); // Apply the new theme
+            localStorage.setItem('theme', newTheme); // Save the new preference
+        });
+    } else {
+        console.error("Theme toggle button not found!");
+    }
+    // --- END SECTION 5 ---
+
 }); // End of DOMContentLoaded listener
+  

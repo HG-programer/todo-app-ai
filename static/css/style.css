@@ -1,2 +1,74 @@
-body{padding-top: 20px;}
-.task-item{ display : flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
+/* Define color variables for Light Mode (Default) */
+:root {
+    --bg-color: #ffffff; /* White background */
+    --text-color: #212529; /* Dark text (Bootstrap default) */
+    --card-bg: #ffffff; /* White card background */
+    --card-border: #dee2e6; /* Light gray border (Bootstrap default) */
+    --input-bg: #ffffff;
+    --input-border: #ced4da;
+    /* Add more variables as needed: links, accents, etc. */
+  }
+  
+  /* Define color variable overrides for Dark Mode */
+  /* We use the data-bs-theme attribute on the <html> tag, which Bootstrap 5 uses */
+  [data-bs-theme="dark"] {
+    --bg-color: #212529; /* Dark background */
+    --text-color: #f8f9fa; /* Light text (Bootstrap default dark) */
+    --card-bg: #343a40; /* Darker gray card background */
+    --card-border: #495057; /* Slightly lighter gray border */
+    --input-bg: #495057; /* Dark input background */
+    --input-border: #6c757d;
+    /* Override other variables as needed */
+  }
+  
+  /* Apply the variables to elements */
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    padding-top: 20px; /* Keep existing padding */
+    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition */
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--text-color); /* Ensure headings also use the variable */
+  }
+  
+  /* Style list group items using variables */
+  .list-group-item {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+    color: var(--text-color); /* Ensure text inside items uses variable */
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease; /* Smooth transition */
+  }
+  
+  /* Custom styles for task items (keep existing layout) */
+  .task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  /* Style form inputs using variables */
+  /* Note: Bootstrap's data-bs-theme handles most of this, but explicit overrides can help */
+  .form-control {
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      border-color: var(--input-border);
+  }
+  .form-control::placeholder { /* Style placeholder text */
+      color: #6c757d; /* Default gray, adjust if needed */
+  }
+  [data-bs-theme="dark"] .form-control::placeholder {
+      color: #adb5bd; /* Lighter gray for dark mode */
+  }
+  
+  /* Ensure modal uses theme (Bootstrap should handle this with data-bs-theme on html) */
+  /* .modal-content {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+  }
+  .modal-header, .modal-footer {
+    border-color: var(--card-border);
+  } */
+  /* Generally, let Bootstrap handle modal theming via data-bs-theme first */
