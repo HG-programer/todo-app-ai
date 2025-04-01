@@ -91,3 +91,57 @@
 [data-bs-theme="dark"] .task-item.task-completed .task-text {
   color: #adb5bd; /* Lighter gray for dark mode (Bootstrap's default muted text) */
 }
+
+/* --- Animation Keyframes --- */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px); /* Optional: Slight slide down */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: scaleY(1); /* Start at normal scale */
+    max-height: 100px; /* Adjust if task items can be taller */
+  }
+  to {
+    opacity: 0;
+    transform: scaleY(0.8); /* Optional: Slight shrink */
+    max-height: 0;
+    margin-bottom: 0; /* Remove margin during fade out */
+    padding-top: 0;   /* Remove padding */
+    padding-bottom: 0;
+    border-width: 0;  /* Remove borders */
+  }
+}
+
+/* --- Animation Classes --- */
+
+.task-item.task-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.task-item.task-fade-out {
+  animation: fadeOut 0.4s ease-in forwards;
+  /* Adjust timing for smoother visuals if needed */
+  transition: margin-bottom 0.4s ease-in, padding 0.4s ease-in; /* Ensure margin/padding transitions match animation */
+}
+
+/* Ensure the container collapses nicely when items fade out */
+#taskList {
+    overflow: hidden; /* Prevent content spill during animation */
+}
+
+/* Make sure the task-item itself handles transitions if properties are changed directly */
+.task-item {
+    /* ... keep existing styles ... */
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease; /* Existing theme transitions */
+     overflow: hidden; /* Important for controlling height/padding animations */
+}

@@ -89,58 +89,68 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // --- End Section 3 ---
 
-
-    // --- SECTION 4: Helper Function to Add New Task LI Element ---
-    function addNewTaskToList(task) {
-        if (!taskList || !task || typeof task.id === 'undefined') {
-            console.error("Cannot add task to list.", task);
-            return;
-        }
-        const li = document.createElement('li');
-        li.className = `list-group-item task-item d-flex justify-content-between align-items-center ${task.completed ? 'task-completed' : ''}`;
-        li.dataset.taskId = task.id;
-
-        const taskContentDiv = document.createElement('div');
-        taskContentDiv.className = 'd-flex align-items-center me-3';
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.className = 'form-check-input task-checkbox me-2';
-        checkbox.checked = task.completed;
-        checkbox.dataset.taskId = task.id;
-        const span = document.createElement('span');
-        span.className = 'task-text';
-        span.textContent = task.content;
-        taskContentDiv.appendChild(checkbox);
-        taskContentDiv.appendChild(span);
-
-        const buttonDiv = document.createElement('div');
-        buttonDiv.className = 'task-buttons btn-group';
-        const aiButton = document.createElement('button');
-        aiButton.type = "button"; // Important for buttons in groups not submitting forms
-        aiButton.className = 'ask-ai-btn btn btn-info btn-sm';
-        aiButton.textContent = 'Ask AI';
-        aiButton.dataset.taskText = task.content;
-        const motivateButton = document.createElement('button');
-        motivateButton.type = "button";
-        motivateButton.className = 'motivate-me-btn btn btn-success btn-sm';
-        motivateButton.textContent = 'Motivate Me!';
-        const deleteButton = document.createElement('button');
-        deleteButton.type = "button";
-        deleteButton.className = 'delete-btn btn btn-danger btn-sm';
-        deleteButton.textContent = 'Delete';
-        deleteButton.dataset.taskId = task.id;
-        buttonDiv.appendChild(aiButton);
-        buttonDiv.appendChild(motivateButton);
-        buttonDiv.appendChild(deleteButton);
-
-        li.appendChild(taskContentDiv);
-        li.appendChild(buttonDiv);
-        taskList.appendChild(li);
-
-        if (noTasksMsg) {
-            noTasksMsg.style.display = 'none';
-        }
+   // --- SECTION 4: Helper Function to Add New Task LI Element ---
+function addNewTaskToList(task) {
+    if (!taskList || !task || typeof task.id === 'undefined') {
+        console.error("Cannot add task to list.", task);
+        return;
     }
+    const li = document.createElement('li');
+    // Set base classes WITHOUT animation initially
+    li.className = `list-group-item task-item d-flex justify-content-between align-items-center ${task.completed ? 'task-completed' : ''}`;
+    li.dataset.taskId = task.id;
+
+    // --- Create internal elements (taskContentDiv, buttonDiv, etc.) ---
+    // ... (code for checkbox, span, buttons as before) ...
+    const taskContentDiv = document.createElement('div');
+    taskContentDiv.className = 'd-flex align-items-center me-3';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox'; checkbox.className = 'form-check-input task-checkbox me-2';
+    checkbox.checked = task.completed; checkbox.dataset.taskId = task.id;
+    const span = document.createElement('span'); span.className = 'task-text';
+    span.textContent = task.content;
+    taskContentDiv.appendChild(checkbox); taskContentDiv.appendChild(span);
+
+    const buttonDiv = document.createElement('div');
+    buttonDiv.className = 'task-buttons btn-group';
+    const aiButton = document.createElement('button');
+    aiButton.type = "button"; aiButton.className = 'ask-ai-btn btn btn-info btn-sm';
+    aiButton.textContent = 'Ask AI'; aiButton.dataset.taskText = task.content;
+    const motivateButton = document.createElement('button');
+    motivateButton.type = "button"; motivateButton.className = 'motivate-me-btn btn btn-success btn-sm';
+    motivateButton.textContent = 'Motivate Me!';
+    const deleteButton = document.createElement('button');
+    deleteButton.type = "button"; deleteButton.className = 'delete-btn btn btn-danger btn-sm';
+    deleteButton.textContent = 'Delete'; deleteButton.dataset.taskId = task.id;
+    buttonDiv.appendChild(aiButton); buttonDiv.appendChild(motivateButton);
+    buttonDiv.appendChild(deleteButton);
+    // --- End Create internal elements ---
+
+    li.appendChild(taskContentDiv);
+    li.appendChild(buttonDiv);
+
+    // --- Append FIRST, then add animation class ---
+    taskList.appendChild(li);
+
+    // Add the fade-in class slightly after appending to trigger animation
+    // Using requestAnimationFrame ensures the element is in the DOM before animating
+    requestAnimationFrame(() => {
+         li.classList.add('task-fade-in');
+    });
+
+    // Optionally remove the class after animation (cleaner DOM, prevents potential conflicts)
+    li.addEventListener('animationend', () => {
+        li.classList.remove('task-fade-in');
+    }, { once: true }); // Important: run only once per animation
+
+
+    if (noTasksMsg) {
+        noTasksMsg.style.display = 'none';
+    }
+
+    // Optional Feedback: Show temporary message
+    // showFeedbackMessage("Task added!", "success"); // Implement this function later if desired
+}
     // --- End Section 4 ---
 
 
@@ -227,48 +237,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Handles Delete button clicks <<-- UPDATED WITH SPINNER
-    async function handleDeleteClick(button, taskId) {
-        if (!confirm(`Are you sure you want to delete task ID: ${taskId}?`)) {
-            return;
-        }
-        button.disabled = true;
-        const originalContent = button.innerHTML; // Store original HTML
-        button.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...`;
-        const listItem = button.closest('.task-item');
+    // --- SECTION 5: Event Handler Functions ---
+// ... (handleAskAiClick, handleMotivateMeClick, handleCheckboxChange are okay) ...
 
-        try {
-            const response = await fetch(`/delete/${taskId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            const result = await response.json();
+// Handles Delete button clicks <<-- UPDATED WITH FADE-OUT ANIMATION
+async function handleDeleteClick(button, taskId) {
+    if (!confirm(`Are you sure you want to delete task ID: ${taskId}?`)) {
+        return;
+    }
+    button.disabled = true;
+    const originalContent = button.innerHTML;
+    button.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...`;
+    const listItem = button.closest('.task-item');
 
-            if (response.ok && result.success) {
-                if (listItem) {
-                    listItem.remove(); // We'll add animation later
-                    console.log(`Task ${taskId} deleted.`);
-                    if (taskList && taskList.children.length === 0 && noTasksMsg) {
-                        noTasksMsg.style.display = 'block';
-                    }
-                } else {
-                    console.warn(`Could not find list item ${taskId} to remove.`);
-                    location.reload();
+    if (!listItem) {
+        console.error("Could not find list item to delete visually.");
+        // Optionally restore button state if list item not found visually
+        button.disabled = false;
+        button.innerHTML = originalContent;
+        return; // Stop if we can't find the list item
+    }
+
+    try {
+        const response = await fetch(`/delete/${taskId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            console.log(`Task ${taskId} delete request successful.`);
+            // === Apply fade-out animation BEFORE removing ===
+            listItem.classList.add('task-fade-out');
+            listItem.addEventListener('animationend', () => {
+                listItem.remove(); // Remove element ONLY after animation ends
+                console.log(`Task ${taskId} removed from DOM.`);
+                // Check if list is empty AFTER removing the element
+                if (taskList && taskList.children.length === 0 && noTasksMsg) {
+                    noTasksMsg.style.display = 'block';
                 }
-                // Button is gone, no restore needed on success
-            } else {
-                console.error('Error deleting task:', result.error || 'Unknown');
-                alert(`Error deleting task: ${result.error || 'Server error'}`);
-                button.disabled = false; // Restore button only on failure
-                button.innerHTML = originalContent;
-            }
-        } catch (error) {
-            console.error('Network error (Delete Task):', error);
-            alert('Failed to delete task. Check network.');
-            button.disabled = false; // Restore button only on failure
+                // Optional Feedback:
+                // showFeedbackMessage("Task deleted!", "success"); // Implement later if desired
+            }, { once: true }); // Run listener only once
+
+            // === DO NOT REMOVE IMMEDIATELY ===
+            // listItem.remove(); // <<<--- REMOVE THIS LINE (it was here before)
+
+        } else {
+            console.error('Error deleting task (server):', result.error || 'Unknown');
+            alert(`Error deleting task: ${result.error || 'Server error'}`);
+            button.disabled = false; // Restore button on server failure
             button.innerHTML = originalContent;
         }
+    } catch (error) {
+        console.error('Network error (Delete Task):', error);
+        alert('Failed to delete task. Check network.');
+        button.disabled = false; // Restore button on network failure
+        button.innerHTML = originalContent;
     }
+}
+
+// ... (displayModalResponse is okay) ...
 
     // Helper function to display modal response
     function displayModalResponse(title, result, isOk, errorPrefix, responseKey = 'details') {
