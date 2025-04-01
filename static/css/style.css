@@ -178,8 +178,13 @@ body {
 
 /* Ensure existing list-group styles are maintained */
 .list-group-item {
-  /* Other styles like background-color, border-color, transitions from themes */
-  /* ... */
+  /* Ensure text color inherits */
+  background-color: var(--task-item-bg);
+  border-color: var(--task-item-border);
+  color: var(--app-text-color);
+  transition: background-color var(--theme-transition-duration) ease,
+              border-color var(--theme-transition-duration) ease,
+              color var(--theme-transition-duration) ease;
 }
 
 /* --- Other styles remain the same --- */
