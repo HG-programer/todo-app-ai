@@ -226,7 +226,97 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- SECTION 9: Theme Toggling Logic ---
-    (function applyThemePreference() { const currentStoredTheme = localStorage.getItem('theme'); const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)'); let initialTheme = 'light'; if (currentStoredTheme) { initialTheme = currentStoredTheme; } else if (prefersDarkScheme.matches) { initialTheme = 'dark'; } const applyTheme = (theme) => { let buttonText = 'Dark Mode <i class="bi bi-moon-stars-fill"></i>'; if (theme === 'dark') { document.documentElement.setAttribute('data-bs-theme', 'dark'); buttonText = 'Light Mode <i class="bi bi-sun-fill"></i>'; } else { document.documentElement.removeAttribute('data-bs-theme'); } if(themeToggleButton) themeToggleButton.innerHTML = buttonText; }; applyTheme(initialTheme); if (themeToggleButton) { themeToggleButton.addEventListener('click', () => { let currentTheme = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light'; let newTheme = currentTheme === 'dark' ? 'light' : 'dark'; applyTheme(newTheme); localStorage.setItem('theme', newTheme); }); } else { console.warn("Theme toggle button not found!"); } })();
+    // --- SECTION 9: Theme Toggling Logic ---
+
+// Define available themes
+const availableThemes = ['light', 'dark', 'forest', 'ocean'];
+const themeIcons = { // Optional: map themes to icons
+    'light': '<i class="bi bi-sun-fill"></i>',
+    'dark': '<i class="bi bi-moon-stars-fill"></i>',
+    'forest': '<i class="bi bi-tree-fill"></i>', // Example
+    'ocean': '<i class="bi bi-water"></i>'      // Example
+};
+
+// Function to apply a theme
+function applyTheme(themeName) {
+    if (!availableThemes.includes(themeName)) {
+        console.warn(`Theme "${themeName}" not recognized. Defaulting to "light".`);
+        themeName = 'light'; // Fallback to default
+    }
+
+    console.log(`Applying theme: ${themeName}`);
+    // Set the data-theme attribute on the <html> element
+    document.documentElement.dataset.theme = themeName;
+
+    // Update the theme toggle button text/icon
+    if (themeToggleButton) {
+        const iconHTML = themeIcons[themeName] || ''; // Get icon or empty string
+        // Capitalize theme name for display
+        const displayName = themeName.charAt(0).toUpperCase() + themeName.slice(1);
+        themeToggleButton.innerHTML = `${iconHTML} Theme: ${displayName}`;
+        themeToggleButton.title = `Current theme: ${displayName}. Click to change.`;
+    }
+
+    // Save the selected theme to localStorage
+    try {
+        localStorage.setItem('theme', themeName);
+    } catch (e) {
+        console.error("Could not save theme to localStorage:", e);
+    }
+}
+
+// Function to load and apply theme preference on page load
+function loadAndApplyInitialTheme() {
+    let preferredTheme = 'light'; // Default theme
+
+    // 1. Check localStorage
+    try {
+        const storedTheme = localStorage.getItem('theme');
+        if (storedTheme && availableThemes.includes(storedTheme)) {
+            preferredTheme = storedTheme;
+            console.log(`Loaded theme from localStorage: ${preferredTheme}`);
+        } else if (storedTheme) {
+             console.warn(`Stored theme "${storedTheme}" is invalid. Using default.`);
+         }
+    } catch (e) {
+        console.error("Could not read theme from localStorage:", e);
+    }
+
+    // 2. Optional: Check system preference IF no valid stored theme
+    //    (Comment this out if you prefer localStorage to always win)
+    /*
+    if (preferredTheme === 'light' && !localStorage.getItem('theme')) { // Only check system if no user choice is stored
+         const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+         if (prefersDarkScheme.matches && availableThemes.includes('dark')) {
+              preferredTheme = 'dark';
+              console.log("No stored theme, using system preference: dark");
+         }
+     }
+    */
+
+    applyTheme(preferredTheme); // Apply the determined theme
+}
+
+// Attach event listener to the theme toggle button
+if (themeToggleButton) {
+    themeToggleButton.addEventListener('click', () => {
+        const currentTheme = document.documentElement.dataset.theme || 'light'; // Get current theme from attribute
+        const currentIndex = availableThemes.indexOf(currentTheme);
+
+        // Calculate the index of the next theme, wrapping around
+        const nextIndex = (currentIndex + 1) % availableThemes.length;
+        const nextTheme = availableThemes[nextIndex];
+
+        applyTheme(nextTheme); // Apply the next theme
+    });
+} else {
+    console.warn("Theme toggle button (#theme-toggle-btn) not found!");
+}
+
+// Load the initial theme when the DOM is ready
+loadAndApplyInitialTheme();
+
+// --- End Section 9 ---
     // --- End Section 9 ---
 
 

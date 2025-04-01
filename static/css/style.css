@@ -1,147 +1,295 @@
-/* Define color variables for Light Mode (Default) */
+/* style.css */
+
+/* Define base variables (Defaulting to Light Theme) */
 :root {
-    --bg-color: #ffffff; /* White background */
-    --text-color: #212529; /* Dark text (Bootstrap default) */
-    --card-bg: #ffffff; /* White card background */
-    --card-border: #dee2e6; /* Light gray border (Bootstrap default) */
-    --input-bg: #ffffff;
-    --input-border: #ced4da;
-    /* Add more variables as needed: links, accents, etc. */
-  }
-  
-  /* Define color variable overrides for Dark Mode */
-  /* We use the data-bs-theme attribute on the <html> tag, which Bootstrap 5 uses */
-  [data-bs-theme="dark"] {
-    --bg-color: #212529; /* Dark background */
-    --text-color: #f8f9fa; /* Light text (Bootstrap default dark) */
-    --card-bg: #343a40; /* Darker gray card background */
-    --card-border: #495057; /* Slightly lighter gray border */
-    --input-bg: #495057; /* Dark input background */
-    --input-border: #6c757d;
-    /* Override other variables as needed */
-  }
-  
-  /* Apply the variables to elements */
-  body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    padding-top: 20px; /* Keep existing padding */
-    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition */
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    color: var(--text-color); /* Ensure headings also use the variable */
-  }
-  
-  /* Style list group items using variables */
-  .list-group-item {
-    background-color: var(--card-bg);
-    border-color: var(--card-border);
-    color: var(--text-color); /* Ensure text inside items uses variable */
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease; /* Smooth transition */
-  }
-  
-  /* Custom styles for task items (keep existing layout) */
-  .task-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  
-  /* Style form inputs using variables */
-  /* Note: Bootstrap's data-bs-theme handles most of this, but explicit overrides can help */
-  .form-control {
-      background-color: var(--input-bg);
-      color: var(--text-color);
-      border-color: var(--input-border);
-  }
-  .form-control::placeholder { /* Style placeholder text */
-      color: #6c757d; /* Default gray, adjust if needed */
-  }
-  [data-bs-theme="dark"] .form-control::placeholder {
-      color: #adb5bd; /* Lighter gray for dark mode */
-  }
-  
-  /* Ensure modal uses theme (Bootstrap should handle this with data-bs-theme on html) */
-  /* .modal-content {
-    background-color: var(--card-bg);
-    color: var(--text-color);
-  }
-  .modal-header, .modal-footer {
-    border-color: var(--card-border);
-  } */
-  /* Generally, let Bootstrap handle modal theming via data-bs-theme first */
+  --app-bg-color: #ffffff;
+  --app-text-color: #212529;
+  --app-muted-text-color: #6c757d;
+  --app-border-color: #dee2e6;
+  --app-primary-color: #0d6efd; /* Bootstrap Blue */
+  --app-primary-text-color: #ffffff;
+  --app-secondary-color: #6c757d; /* Bootstrap Gray */
+  --app-secondary-text-color: #ffffff;
+  --app-info-color: #0dcaf0;     /* Bootstrap Cyan */
+  --app-info-text-color: #000000;
+  --app-success-color: #198754; /* Bootstrap Green */
+  --app-success-text-color: #ffffff;
+  --app-danger-color: #dc3545; /* Bootstrap Red */
+  --app-danger-text-color: #ffffff;
+  --app-link-color: #0d6efd;
 
-  /* Add this rule to the end of the file */
+  --task-item-bg: #ffffff;
+  --task-item-border: #dee2e6;
+  --task-completed-text-color: #6c757d;
+  --task-completed-bg-color: #f8f9fa; /* Light gray */
 
-.task-item.task-completed .task-text {
+  --input-bg: #ffffff;
+  --input-border: #ced4da;
+  --input-text: #495057;
+
+  --modal-bg: #ffffff;
+  --modal-header-border: #dee2e6;
+  --modal-footer-border: #dee2e6;
+
+  /* Add transition for smoother theme changes */
+  --theme-transition-duration: 0.3s;
+}
+
+/* Dark Theme Overrides */
+html[data-theme="dark"] {
+  --app-bg-color: #212529;
+  --app-text-color: #dee2e6;
+  --app-muted-text-color: #adb5bd;
+  --app-border-color: #495057;
+  --app-primary-color: #0d6efd; /* Keep primary, maybe adjust? */
+  --app-link-color: #6ea8fe; /* Lighter blue for links */
+
+  --task-item-bg: #343a40;
+  --task-item-border: #495057;
+  --task-completed-text-color: #6c757d;
+  --task-completed-bg-color: #2b3035; /* Darker gray */
+
+  --input-bg: #343a40;
+  --input-border: #6c757d;
+  --input-text: #dee2e6;
+
+  --modal-bg: #2b3035;
+  --modal-header-border: #495057;
+  --modal-footer-border: #495057;
+  /* Override Bootstrap's dark theme defaults if needed */
+  color-scheme: dark;
+}
+
+/* Forest Theme Overrides (Dark Based) */
+html[data-theme="forest"] {
+  --app-bg-color: #2f3e2a; /* Dark forest green */
+  --app-text-color: #e8e4d9; /* Off-white / light beige */
+  --app-muted-text-color: #a0a8a2; /* Muted green/gray */
+  --app-border-color: #53634f; /* Darker green */
+  --app-primary-color: #8fbc8f; /* DarkSeaGreen (can adjust) */
+  --app-primary-text-color: #1a2417; /* Dark green text on primary */
+  --app-secondary-color: #a0522d; /* Sienna Brown */
+  --app-secondary-text-color: #e8e4d9;
+  --app-info-color: #add8e6;    /* Light blue for contrast? */
+  --app-info-text-color: #1a2417;
+  --app-success-color: #90ee90; /* Light green */
+  --app-success-text-color: #1a2417;
+  --app-danger-color: #cd5c5c; /* Indian red */
+  --app-danger-text-color: #ffffff;
+  --app-link-color: #98fb98; /* Pale Green link */
+
+  --task-item-bg: #3e4f3a; /* Slightly lighter than main bg */
+  --task-item-border: #53634f;
+  --task-completed-text-color: #8f9e8b;
+  --task-completed-bg-color: #2a3a26;
+
+  --input-bg: #3e4f3a;
+  --input-border: #53634f;
+  --input-text: #e8e4d9;
+
+  --modal-bg: #2a3a26;
+  --modal-header-border: #53634f;
+  --modal-footer-border: #53634f;
+  color-scheme: dark; /* Indicate it's dark-based */
+}
+
+/* Ocean Theme Overrides (Light Based) */
+html[data-theme="ocean"] {
+  --app-bg-color: #e0f7fa; /* Very light cyan */
+  --app-text-color: #004d40; /* Dark teal */
+  --app-muted-text-color: #4db6ac; /* Medium teal/aqua */
+  --app-border-color: #b2ebf2; /* Light cyan border */
+  --app-primary-color: #00796b; /* Strong teal */
+  --app-primary-text-color: #ffffff;
+  --app-secondary-color: #fdd835; /* Yellow for sandy contrast */
+  --app-secondary-text-color: #3e2723; /* Dark brown text */
+  --app-info-color: #29b6f6;    /* Light blue */
+  --app-info-text-color: #000000;
+  --app-success-color: #4caf50; /* Standard green */
+  --app-success-text-color: #ffffff;
+  --app-danger-color: #e57373; /* Lighter red */
+  --app-danger-text-color: #ffffff;
+  --app-link-color: #006064; /* Darker cyan link */
+
+  --task-item-bg: #ffffff;
+  --task-item-border: #b2ebf2;
+  --task-completed-text-color: #757575; /* Gray for completed */
+  --task-completed-bg-color: #eeeeee;
+
+  --input-bg: #ffffff;
+  --input-border: #80deea; /* Cyan border */
+  --input-text: #004d40;
+
+  --modal-bg: #ffffff;
+  --modal-header-border: #b2ebf2;
+  --modal-footer-border: #b2ebf2;
+  color-scheme: light; /* Indicate it's light-based */
+}
+
+
+/* Apply variables to elements */
+body {
+  background-color: var(--app-bg-color);
+  color: var(--app-text-color);
+  transition: background-color var(--theme-transition-duration) ease, color var(--theme-transition-duration) ease;
+}
+
+/* Basic Bootstrap component overrides using our variables */
+.list-group-item {
+  background-color: var(--task-item-bg);
+  border-color: var(--task-item-border);
+  color: var(--app-text-color); /* Ensure text color inherits */
+   transition: background-color var(--theme-transition-duration) ease,
+               border-color var(--theme-transition-duration) ease,
+               color var(--theme-transition-duration) ease;
+}
+
+.task-completed .task-text {
   text-decoration: line-through;
-  color: #6c757d; /* Bootstrap's secondary text color (gray) */
-  /* Optional: Faded color in dark mode */
-  /* [data-bs-theme="dark"] & {
-      color: #adb5bd;
-  } */
+  color: var(--task-completed-text-color);
+  transition: color var(--theme-transition-duration) ease; /* Smooth strikethrough color */
 }
 
-/* Ensure checkbox stays aligned */
-.task-item .form-check-input {
-    margin-top: 0.1em; /* Adjust slightly if needed */
-}
-[data-bs-theme="dark"] .task-item.task-completed .task-text {
-  color: #adb5bd; /* Lighter gray for dark mode (Bootstrap's default muted text) */
+.list-group-item.task-completed {
+  background-color: var(--task-completed-bg-color);
 }
 
-/* --- Animation Keyframes --- */
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px); /* Optional: Slight slide down */
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.form-control {
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--input-text);
+  transition: background-color var(--theme-transition-duration) ease,
+              border-color var(--theme-transition-duration) ease,
+              color var(--theme-transition-duration) ease;
+}
+.form-control::placeholder {
+   color: var(--app-muted-text-color);
+   opacity: 0.8;
 }
 
-@keyframes fadeOut {
-  from {
-    opacity: 1;
-    transform: scaleY(1); /* Start at normal scale */
-    max-height: 100px; /* Adjust if task items can be taller */
-  }
-  to {
-    opacity: 0;
-    transform: scaleY(0.8); /* Optional: Slight shrink */
-    max-height: 0;
-    margin-bottom: 0; /* Remove margin during fade out */
-    padding-top: 0;   /* Remove padding */
-    padding-bottom: 0;
-    border-width: 0;  /* Remove borders */
-  }
+.btn-primary {
+  --bs-btn-bg: var(--app-primary-color);
+  --bs-btn-border-color: var(--app-primary-color);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--app-primary-color) 85%, #000);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--app-primary-color) 80%, #000);
+  --bs-btn-active-bg: color-mix(in srgb, var(--app-primary-color) 75%, #000);
+  --bs-btn-active-border-color: color-mix(in srgb, var(--app-primary-color) 70%, #000);
+  --bs-btn-color: var(--app-primary-text-color);
+  --bs-btn-hover-color: var(--app-primary-text-color);
+  --bs-btn-active-color: var(--app-primary-text-color);
+  transition: background-color var(--theme-transition-duration) ease,
+              border-color var(--theme-transition-duration) ease,
+              color var(--theme-transition-duration) ease;
 }
 
-/* --- Animation Classes --- */
-
-.task-item.task-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
+/* Repeat for other btn types (.btn-danger, .btn-success, .btn-info, .btn-secondary) */
+.btn-success {
+   --bs-btn-bg: var(--app-success-color); /* Use appropriate app variables */
+   --bs-btn-border-color: var(--app-success-color);
+   --bs-btn-color: var(--app-success-text-color);
+   /* Add hover/active/text color vars as needed */
+    transition: background-color var(--theme-transition-duration) ease,
+              border-color var(--theme-transition-duration) ease,
+              color var(--theme-transition-duration) ease;
+}
+.btn-danger {
+   --bs-btn-bg: var(--app-danger-color);
+   --bs-btn-border-color: var(--app-danger-color);
+   --bs-btn-color: var(--app-danger-text-color);
+    transition: background-color var(--theme-transition-duration) ease,
+              border-color var(--theme-transition-duration) ease,
+              color var(--theme-transition-duration) ease;
+}
+.btn-info {
+  --bs-btn-bg: var(--app-info-color);
+  --bs-btn-border-color: var(--app-info-color);
+  --bs-btn-color: var(--app-info-text-color);
+   transition: background-color var(--theme-transition-duration) ease,
+             border-color var(--theme-transition-duration) ease,
+             color var(--theme-transition-duration) ease;
+}
+.btn-secondary {
+  --bs-btn-bg: var(--app-secondary-color);
+  --bs-btn-border-color: var(--app-secondary-color);
+  --bs-btn-color: var(--app-secondary-text-color);
+   transition: background-color var(--theme-transition-duration) ease,
+             border-color var(--theme-transition-duration) ease,
+             color var(--theme-transition-duration) ease;
+}
+/* Style Outline buttons to use vars too */
+.btn-outline-secondary {
+   --bs-btn-color: var(--app-secondary-color);
+   --bs-btn-border-color: var(--app-secondary-color);
+   --bs-btn-hover-bg: var(--app-secondary-color);
+   --bs-btn-hover-color: var(--app-secondary-text-color);
+    transition: background-color var(--theme-transition-duration) ease,
+              border-color var(--theme-transition-duration) ease,
+              color var(--theme-transition-duration) ease;
+}
+.btn-outline-info { /* For Ask AI */
+   --bs-btn-color: var(--app-info-color);
+   --bs-btn-border-color: var(--app-info-color);
+   --bs-btn-hover-bg: var(--app-info-color);
+   --bs-btn-hover-color: var(--app-info-text-color);
+    transition: background-color var(--theme-transition-duration) ease,
+              border-color var(--theme-transition-duration) ease,
+              color var(--theme-transition-duration) ease;
+}
+.btn-outline-danger { /* For Delete */
+   --bs-btn-color: var(--app-danger-color);
+   --bs-btn-border-color: var(--app-danger-color);
+   --bs-btn-hover-bg: var(--app-danger-color);
+   --bs-btn-hover-color: var(--app-danger-text-color);
+    transition: background-color var(--theme-transition-duration) ease,
+              border-color var(--theme-transition-duration) ease,
+              color var(--theme-transition-duration) ease;
 }
 
-.task-item.task-fade-out {
-  animation: fadeOut 0.4s ease-in forwards;
-  /* Adjust timing for smoother visuals if needed */
-  transition: margin-bottom 0.4s ease-in, padding 0.4s ease-in; /* Ensure margin/padding transitions match animation */
+a {
+  color: var(--app-link-color);
+  transition: color var(--theme-transition-duration) ease;
 }
 
-/* Ensure the container collapses nicely when items fade out */
-#taskList {
-    overflow: hidden; /* Prevent content spill during animation */
+.text-muted {
+  color: var(--app-muted-text-color) !important; /* Override Bootstrap if necessary */
+  transition: color var(--theme-transition-duration) ease;
 }
 
-/* Make sure the task-item itself handles transitions if properties are changed directly */
-.task-item {
-    /* ... keep existing styles ... */
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease; /* Existing theme transitions */
-     overflow: hidden; /* Important for controlling height/padding animations */
+/* Modal Styles */
+.modal-content {
+   background-color: var(--modal-bg);
+   color: var(--app-text-color);
+   border: 1px solid var(--app-border-color);
+    transition: background-color var(--theme-transition-duration) ease,
+               border-color var(--theme-transition-duration) ease,
+               color var(--theme-transition-duration) ease;
 }
+.modal-header {
+   border-bottom: 1px solid var(--modal-header-border);
+   transition: border-color var(--theme-transition-duration) ease;
+}
+.modal-footer {
+   border-top: 1px solid var(--modal-footer-border);
+   transition: border-color var(--theme-transition-duration) ease;
+}
+.btn-close { /* Style close button based on theme */
+   filter: invert(1); /* Apply invert filter for dark themes */
+    transition: filter var(--theme-transition-duration) ease;
+}
+html[data-theme="dark"] .btn-close,
+html[data-theme="forest"] .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+
+/* Include existing fade animations etc. */
+@keyframes fadeIn { /* ... */ }
+.task-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+@keyframes fadeOut { /* ... */ }
+.task-fade-out {
+  animation: fadeOut 0.5s ease-in-out;
+}
+
+/* Add other styles as needed */
