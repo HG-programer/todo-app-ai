@@ -328,3 +328,27 @@ html[data-theme="forest"] .btn-close {
 }
 
 /* Add other styles as needed */
+
+/* style.css */
+
+/* Existing styles for .task-item, margins etc */
+.task-item {
+  margin-bottom: 0.5rem; /* Keep the space between items */
+  /* Optional border-radius */
+
+   /* Add overall gap for main flex items (text-container vs button-group) */
+   gap: 1rem; /* Adjust as needed (e.g., 0.75rem) */
+}
+.task-item:last-child { margin-bottom: 0; }
+
+
+/* Target the inner container for checkbox-to-text gap */
+.task-content-container {
+  /* Add gap between checkbox and text label */
+  gap: 0.5rem; /* Adjust as needed (e.g., 0.375rem, maybe matches me-2?) */
+}
+
+/* NOTE: .btn-group already adds spacing between buttons, so we don't need gap there */
+
+
+/* --- Other styles remain the same --- */

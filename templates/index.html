@@ -52,36 +52,33 @@
         <ul id="taskList" class="list-group mb-4">
 
             {% for task in tasks %}
-            <li class="list-group-item task-item d-flex justify-content-between align-items-center {% if task.completed %}task-completed{% endif %}" data-task-id="{{ task.id }}">
+            <li class="list-group-item task-item d-flex justify-content-between align-items-center {% if task.completed %}task-completed{% endif %}" data-task-id="{{ task.id }}"> {# Added d-flex #}
 
                 <!-- Left side: Checkbox and Task Text -->
-                <div class="d-flex align-items-center task-content-container me-3 flex-grow-1"> <!-- Added flex-grow-1 -->
-                    <input class="form-check-input task-checkbox me-2"
+                 <!-- MODIFIED: Add flex, remove me-3 -->
+                <div class="d-flex align-items-center flex-grow-1 task-content-container">
+                     <!-- MODIFIED: Removed me-2 -->
+                    <input class="form-check-input task-checkbox"
                            type="checkbox"
                            value=""
                            id="task-check-{{ task.id }}"
                            data-task-id="{{ task.id }}"
                            {% if task.completed %}checked{% endif %}>
                     <label class="task-text form-check-label" for="task-check-{{ task.id }}">
-                        {{ task.content | escape }} {# Added escape filter for safety #}
+                        {{ task.content | escape }}
                     </label>
                 </div>
 
-                <!-- Right side: Buttons Group -->
+                <!-- Right side: Buttons Group (btn-group handles spacing) -->
                 <div class="task-buttons btn-group" role="group" aria-label="Task actions for {{ task.content | escape }}">
-                     <!-- UPDATED: Ask AI Button with Icon -->
-                    <button type="button" class="ask-ai-btn btn btn-outline-info btn-sm" title="Ask AI about this task" data-task-text="{{ task.content | escape }}">
+                    <!-- ... buttons ... -->
+                    <button type="button" class="ask-ai-btn btn btn-outline-info btn-sm" title="Ask AI" data-task-text="{{ task.content | escape }}">
                         <i class="bi bi-magic"></i> <span class="visually-hidden">Ask AI</span>
                     </button>
-
-                    <!-- REMOVED: Per-task motivate button is gone -->
-
-                     <!-- UPDATED: Delete Button with Icon -->
-                    <button type="button" class="delete-btn btn btn-outline-danger btn-sm" title="Delete this task" data-task-id="{{ task.id }}">
+                    <button type="button" class="delete-btn btn btn-outline-danger btn-sm" title="Delete" data-task-id="{{ task.id }}">
                         <i class="bi bi-trash"></i> <span class="visually-hidden">Delete</span>
                     </button>
                 </div>
-
             </li>
             {% else %}
             <!-- Message shown when no tasks exist -->

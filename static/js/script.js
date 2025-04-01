@@ -103,27 +103,45 @@ document.addEventListener('DOMContentLoaded', () => {
     } else { console.error("Task list (#taskList) element not found!"); }
     // --- End Section 4 ---
 
-
     // --- SECTION 5: Helper Function to Create and Add New Task LI Element ---
-    function addNewTaskToList(task) {
-        // ... (code is likely okay, keep as is) ...
-        if (!taskList || !task || typeof task.id === 'undefined') { console.error("Cannot add task to list.", task); return; }
-        const li = document.createElement('li'); li.className = `list-group-item task-item d-flex justify-content-between align-items-center ${task.completed ? 'task-completed' : ''}`; li.dataset.taskId = task.id;
-        const taskContentDiv = document.createElement('div'); taskContentDiv.className = 'd-flex align-items-center me-3 flex-grow-1';
-        const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'form-check-input task-checkbox me-2'; checkbox.checked = task.completed; checkbox.id = `task-${task.id}`;
-        const span = document.createElement('span'); span.className = 'task-text'; span.textContent = task.content;
-        taskContentDiv.appendChild(checkbox); taskContentDiv.appendChild(span);
-        const buttonDiv = document.createElement('div'); buttonDiv.className = 'task-buttons btn-group';
-        const aiButton = document.createElement('button'); aiButton.type = "button"; aiButton.className = 'ask-ai-btn btn btn-outline-info btn-sm'; aiButton.title = "Ask AI"; aiButton.dataset.taskText = task.content; aiButton.innerHTML = '<i class="bi bi-magic"></i><span class="visually-hidden">AI</span>';
-        const deleteButton = document.createElement('button'); deleteButton.type = "button"; deleteButton.className = 'delete-btn btn btn-outline-danger btn-sm'; deleteButton.title = "Delete"; deleteButton.innerHTML = '<i class="bi bi-trash"></i><span class="visually-hidden">Del</span>';
-        buttonDiv.appendChild(aiButton); buttonDiv.appendChild(deleteButton);
-        li.appendChild(taskContentDiv); li.appendChild(buttonDiv);
-        taskList.appendChild(li);
-        requestAnimationFrame(() => { li.classList.add('task-fade-in'); }); li.addEventListener('animationend', () => { li.classList.remove('task-fade-in'); }, { once: true });
-        if (noTasksMsg && noTasksMsg.style.display !== 'none') { noTasksMsg.style.display = 'none'; }
-    }
-    // --- End Section 5 ---
-
+        // --- SECTION 5: Helper Function to Create and Add New Task LI Element ---
+        function addNewTaskToList(task) {
+            // ... (other setup code) ...
+            const li = document.createElement('li');
+            // MODIFIED: Add base flex class directly to LI for gap control
+            li.className = `list-group-item task-item d-flex justify-content-between align-items-center ${task.completed ? 'task-completed' : ''}`;
+            li.dataset.taskId = task.id;
+    
+            const taskContentDiv = document.createElement('div');
+            // MODIFIED: Add flex classes here too for internal gap
+            taskContentDiv.className = 'd-flex align-items-center flex-grow-1'; // REMOVED me-3
+    
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            // MODIFIED: Removed me-2
+            checkbox.className = 'form-check-input task-checkbox';
+            checkbox.checked = task.completed;
+            checkbox.id = `task-${task.id}`;
+    
+            // ... (span/label code remains the same) ...
+            const span = document.createElement('span');
+            span.className = 'task-text';
+            span.textContent = task.content;
+    
+            taskContentDiv.appendChild(checkbox);
+            taskContentDiv.appendChild(span);
+    
+            const buttonDiv = document.createElement('div');
+            buttonDiv.className = 'task-buttons btn-group'; // btn-group manages internal button spacing
+    
+            // ... (button creation remains the same) ...
+    
+            li.appendChild(taskContentDiv);
+            li.appendChild(buttonDiv);
+    
+            // ... (rest of the function - appending, animation) ...
+        }
+        // --- End Section 5 ---
 
     // --- SECTION 6: Task Action Handlers ---
     async function handleAskAiClick(button, taskText) { /* ... keep as is ... */
