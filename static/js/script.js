@@ -601,55 +601,83 @@ function readTasksAloud() {
 
             // UPDATED onresult with "Clear Completed"
             // UPDATED onresult with "Read Tasks" command
-            recognition.onresult = (event) => {
-                console.log("Voice recognition result received.");
-                updateVoiceButtonState('processing'); // Processing the command
-
-                let transcript = "";
-                // ... (transcript extraction logic ...) ...
-                if (event.results && event.results.length > 0 && event.results[0].length > 0) {
-                     transcript = event.results[0][0].transcript.trim();
-                     console.log('Transcript:', transcript, 'Confidence:', event.results[0][0].confidence);
-                } else { /* ... handle no transcript ... */ return; }
-
-                if (transcript === "") { /* ... handle empty transcript ... */ return; }
-
-                const lowerCaseTranscript = transcript.toLowerCase();
-
-                // --- Command Parsing Logic ---
-                if (lowerCaseTranscript.includes('motivate') || lowerCaseTranscript.includes('motivation')) {
-                    console.log("Voice Command Detected: Triggering Motivation");
-                    triggerGeneralMotivation();
-                }
-                else if (lowerCaseTranscript.includes('clear completed') || lowerCaseTranscript.includes('remove finished') || lowerCaseTranscript.includes('delete completed')) {
-                    console.log("Voice Command Detected: Clearing Completed Tasks");
-                     // ... (clear completed logic as before) ...
-                    if (!taskList) { /* ... */ return; }
-                    const completedTasks = taskList.querySelectorAll('li.task-item.task-completed');
-                    if (completedTasks.length === 0) { /* ... */ }
-                    else { /* ... loop and call handleDeleteClick(button, taskId, true) ... */ }
-                }
-                // --- ADDED: Read Tasks Aloud Command ---
-                else if (
-                    lowerCaseTranscript.includes('read tasks') ||
-                    lowerCaseTranscript.includes('read my tasks') ||
-                    lowerCaseTranscript.includes('what are my tasks') ||
-                    lowerCaseTranscript.includes('list tasks')
-                 ) {
-                    console.log("Voice Command Detected: Reading Tasks Aloud");
-                    readTasksAloud(); // Call the speech synthesis function
-                    // Voice button reset will happen in recognition.onend
-                }
-                // --- END ADDED ---
-
-                // --- Add more 'else if' blocks here for "delete task X", "complete task Y", etc. ---
-
-                else {
-                    // --- Default Action: Add Task ---
-                    console.log("Voice Input Detected: Adding Task - ", transcript);
-                    submitNewTask(transcript);
-                }
-            }; // End of onresult
+                       // UPDATED onresult with Logging
+                       recognition.onresult = (event) => {
+                        console.log("--- Voice Result Received ---"); // Mark the start
+                        updateVoiceButtonState('processing'); // Processing the command
+        
+                        let transcript = "";
+                        if (event.results && event.results.length > 0 && event.results[0].length > 0) {
+                             transcript = event.results[0][0].transcript.trim();
+                             // Log the RAW transcript before lowercasing
+                             console.log('Raw Transcript:', `"${transcript}"`, 'Confidence:', event.results[0][0].confidence);
+                        } else {
+                             console.warn("Received result event with no transcript.");
+                             return; // Reset happens in onend
+                         }
+        
+                        if (transcript === "") {
+                            console.log("Empty transcript received.");
+                            if(taskInput) taskInput.placeholder = "Didn't catch that.";
+                            return; // Reset happens in onend
+                        }
+        
+                        const lowerCaseTranscript = transcript.toLowerCase();
+                        // --- ADDED LOG: Log the exact string being checked ---
+                        console.log('Checking Command against:', `"${lowerCaseTranscript}"`);
+        
+                        // --- Command Parsing Logic ---
+                        if (lowerCaseTranscript.includes('motivate') || lowerCaseTranscript.includes('motivation')) {
+                            // --- ADDED LOG ---
+                            console.log(">>> Entering: Motivate block");
+                            triggerGeneralMotivation();
+                        }
+                        else if (lowerCaseTranscript.includes('clear completed') || lowerCaseTranscript.includes('remove finished') || lowerCaseTranscript.includes('delete completed')) {
+                             // --- ADDED LOG ---
+                             console.log(">>> Entering: Clear Completed block");
+                            if (!taskList) { console.error("Task list not found for clearing."); return; }
+                            const completedTasks = taskList.querySelectorAll('li.task-item.task-completed');
+                            if (completedTasks.length === 0) {
+                                console.log("No completed tasks found to clear.");
+                                if(taskInput) taskInput.placeholder = "No completed tasks to clear.";
+                            } else {
+                                 console.log(`Found ${completedTasks.length} completed tasks. Attempting to clear...`);
+                                 let clearedCount = 0;
+                                 completedTasks.forEach(li => { /* ... delete logic ... */
+                                    const taskId = li.dataset.taskId;
+                                    const deleteButton = li.querySelector('.delete-btn');
+                                    if (taskId && deleteButton) {
+                                        handleDeleteClick(deleteButton, taskId, true);
+                                        clearedCount++;
+                                    } else { console.warn(`Could not find taskId or delete button for completed task:`, li); }
+                                });
+                                 console.log(`Initiated clearing for ${clearedCount} tasks.`);
+                                 if(taskInput) taskInput.placeholder = `Cleared ${clearedCount} completed tasks.`;
+                             }
+                        }
+                        else if (
+                            lowerCaseTranscript.includes('read tasks') || // Plural
+                            lowerCaseTranscript.includes('read my tasks') || // Plural
+                            lowerCaseTranscript.includes('what are my tasks') || // Plural
+                            lowerCaseTranscript.includes('list tasks') // Plural
+                            // ADDING Singular version just in case:
+                            // lowerCaseTranscript.includes('read task') ||
+                            // lowerCaseTranscript.includes('read my task')
+                         ) {
+                             // --- ADDED LOG ---
+                            console.log(">>> Entering: Read Tasks block");
+                            readTasksAloud();
+                        }
+                        // --- Add more commands here ---
+                        else {
+                             // --- ADDED LOG ---
+                             console.log(">>> Entering: Default Add Task block");
+                            // --- Default Action: Add Task ---
+                            console.log("Voice Input Defaulting To: Adding Task - ", transcript);
+                            submitNewTask(transcript);
+                        }
+                        console.log("--- Command Parsing Complete ---"); // Mark the end
+                    }; // End of onresult
 
              recognition.onspeechend = () => {
                  // ... (logic as before) ...
