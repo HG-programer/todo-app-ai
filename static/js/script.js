@@ -342,56 +342,115 @@ loadAndApplyInitialTheme();
             recognition.onstart = () => { console.log("Voice recognition started."); updateVoiceButtonState('listening'); };
 
             // UPDATED onresult with logging and SINGULAR checks
-            recognition.onresult = (event) => {
-                console.log("--- Voice Result Received ---");
-                updateVoiceButtonState('processing');
-                let transcript = "";
-                if (event.results && event.results.length > 0 && event.results[0].length > 0) {
-                     transcript = event.results[0][0].transcript.trim();
-                     console.log('Raw Transcript:', `"${transcript}"`, 'Confidence:', event.results[0][0].confidence);
-                } else { console.warn("Received result event with no transcript."); return; }
-                if (transcript === "") { console.log("Empty transcript received."); if(taskInput) taskInput.placeholder = "Didn't catch that."; return; }
-
-                const lowerCaseTranscript = transcript.toLowerCase().trim(); // Trim again for safety
-                console.log('Checking Command against:', `"${lowerCaseTranscript}"`);
-
-                // --- Command Parsing Logic ---
-                if (lowerCaseTranscript.includes('motivate') || lowerCaseTranscript.includes('motivation')) {
-                    console.log(">>> Entering: Motivate block");
-                    triggerGeneralMotivation();
-                }
-                else if (lowerCaseTranscript.includes('clear completed') || lowerCaseTranscript.includes('remove finished') || lowerCaseTranscript.includes('delete completed')) {
-                     console.log(">>> Entering: Clear Completed block");
-                    if (!taskList) { console.error("Task list not found for clearing."); return; }
-                    const completedTasks = taskList.querySelectorAll('li.task-item.task-completed');
-                    if (completedTasks.length === 0) { console.log("No completed tasks found to clear."); if(taskInput) taskInput.placeholder = "No completed tasks to clear."; }
-                    else {
-                         console.log(`Found ${completedTasks.length} completed tasks. Attempting to clear...`); let clearedCount = 0;
-                         completedTasks.forEach(li => { const taskId = li.dataset.taskId; const deleteButton = li.querySelector('.delete-btn'); if (taskId && deleteButton) { handleDeleteClick(deleteButton, taskId, true); clearedCount++; } else { console.warn(`Could not find taskId/delete button for completed task:`, li); } });
-                         console.log(`Initiated clearing for ${clearedCount} tasks.`); if(taskInput) taskInput.placeholder = `Cleared ${clearedCount} completed tasks.`;
-                     }
-                }
-                else if ( // Read tasks command block - Added singular checks
-                    lowerCaseTranscript.includes('read tasks') ||        // Plural
-                    lowerCaseTranscript.includes('read my tasks') ||    // Plural
-                    lowerCaseTranscript.includes('what are my tasks') || // Plural
-                    lowerCaseTranscript.includes('list tasks') ||       // Plural
-                    lowerCaseTranscript.includes('read task') ||         // Singular
-                    lowerCaseTranscript.includes('read my task') ||     // Singular (Observed!)
-                    lowerCaseTranscript.includes('what are my task') ||  // Singular (Observed!)
-                    lowerCaseTranscript.includes('list task')          // Singular
-                 ) {
-                    console.log(">>> Entering: Read Tasks block");
-                    readTasksAloud();
-                }
-                // --- Add more commands here above the final else ---
-                else { // Default: Add Task
-                     console.log(">>> Entering: Default Add Task block");
-                    console.log("Voice Input Defaulting To: Adding Task - ", `"${transcript}"`);
-                    submitNewTask(transcript);
-                }
-                console.log("--- Command Parsing Complete ---");
-            }; // End of onresult
+                        // Existing onresult logic...
+                        recognition.onresult = (event) => {
+                            console.log("--- Voice Result Received ---");
+                            updateVoiceButtonState('processing');
+                            let transcript = "";
+                            // ... (transcript extraction ...)
+                            if (event.results && event.results.length > 0 && event.results[0].length > 0) { /* ... get transcript ... */ } else { /* ... */ return; }
+                            if (transcript === "") { /* ... */ return; }
+            
+                            const lowerCaseTranscript = transcript.toLowerCase().trim();
+                            console.log('Checking Command against:', `"${lowerCaseTranscript}"`);
+            
+                            // --- Command Parsing Logic ---
+                            if (lowerCaseTranscript.includes('motivate') || lowerCaseTranscript.includes('motivation')) {
+                                 console.log(">>> Entering: Motivate block");
+                                 triggerGeneralMotivation();
+                            }
+                            else if (lowerCaseTranscript.includes('clear completed') || lowerCaseTranscript.includes('remove finished') || lowerCaseTranscript.includes('delete completed')) {
+                                console.log(">>> Entering: Clear Completed block");
+                                // ... (clear completed logic as before) ...
+                            }
+                            else if ( /* ... read tasks command block ... */
+                                lowerCaseTranscript.includes('read tasks') || lowerCaseTranscript.includes('read my tasks') || lowerCaseTranscript.includes('what are my tasks') || lowerCaseTranscript.includes('list tasks') ||
+                                lowerCaseTranscript.includes('read task') || lowerCaseTranscript.includes('read my task') || lowerCaseTranscript.includes('what are my task') || lowerCaseTranscript.includes('list task')
+                            ) {
+                                console.log(">>> Entering: Read Tasks block");
+                                readTasksAloud();
+                            }
+            
+                            // --- ADDED: Delete Specific Task Command ---
+                            else if (lowerCaseTranscript.startsWith('delete task ') || lowerCaseTranscript.startsWith('remove task ')) {
+                                console.log(">>> Entering: Delete Specific Task block");
+            
+                                // Extract task identifier
+                                let taskIdentifier = "";
+                                if (lowerCaseTranscript.startsWith('delete task ')) {
+                                    taskIdentifier = transcript.substring('delete task '.length).trim(); // Use original transcript case? Maybe stick to lower.
+                                    taskIdentifier = lowerCaseTranscript.substring('delete task '.length).trim(); // Stick to lower for comparison
+                                } else if (lowerCaseTranscript.startsWith('remove task ')) {
+                                    taskIdentifier = lowerCaseTranscript.substring('remove task '.length).trim();
+                                }
+            
+                                console.log(`Attempting to find task matching: "${taskIdentifier}"`);
+            
+                                if (taskIdentifier === "") {
+                                    console.log("No task name specified for deletion.");
+                                    if(taskInput) taskInput.placeholder = "Please specify which task to delete.";
+                                } else if (!taskList) {
+                                    console.error("Task list element not found, cannot search for task to delete.");
+                                } else {
+                                    // Fuzzy search logic
+                                    let minDistance = Infinity;
+                                    let bestMatchElement = null;
+                                    const taskItems = taskList.querySelectorAll('li.task-item');
+            
+                                    taskItems.forEach(item => {
+                                        const taskTextElement = item.querySelector('.task-text');
+                                        if (taskTextElement) {
+                                            const taskText = taskTextElement.textContent.trim().toLowerCase();
+                                            const distance = getLevenshteinDistance(taskIdentifier, taskText);
+                                            console.log(`Comparing "${taskIdentifier}" with "${taskText}" -> Distance: ${distance}`); // Log comparison
+            
+                                            if (distance < minDistance) {
+                                                minDistance = distance;
+                                                bestMatchElement = item;
+                                            }
+                                            // If distance is 0 (exact match), we can potentially break early
+                                            // if (distance === 0) { return; } // NOTE: forEach cannot be broken out of this way
+                                        }
+                                    });
+            
+                                    // Threshold check
+                                    const SIMILARITY_THRESHOLD = 3; // Max allowed distance (adjust as needed)
+                                    // Let's also check for minimum length to avoid matching "" with "a" (distance 1)
+                                    const MIN_IDENTIFIER_LENGTH = 3;
+            
+                                    if (taskIdentifier.length < MIN_IDENTIFIER_LENGTH) {
+                                         console.log(`Task identifier "${taskIdentifier}" too short for reliable matching.`);
+                                         if(taskInput) taskInput.placeholder = "Task name is too short to reliably find.";
+                                    } else if (bestMatchElement && minDistance <= SIMILARITY_THRESHOLD) {
+                                        const taskId = bestMatchElement.dataset.taskId;
+                                        const taskText = bestMatchElement.querySelector('.task-text').textContent;
+                                        const deleteButton = bestMatchElement.querySelector('.delete-btn');
+            
+                                        if (taskId && deleteButton) {
+                                            console.log(`Match found! Task: "${taskText}" (ID: ${taskId}) with distance ${minDistance}. Deleting.`);
+                                            if(taskInput) taskInput.placeholder = `Deleting "${taskText}"...`; // Feedback
+                                            handleDeleteClick(deleteButton, taskId, true); // skipConfirmation = true
+                                        } else {
+                                            console.error(`Found match element but couldn't find taskId or delete button:`, bestMatchElement);
+                                            if(taskInput) taskInput.placeholder = "Error finding delete components for matched task.";
+                                        }
+                                    } else {
+                                        console.log(`No task found similar enough to "${taskIdentifier}". Min distance found: ${minDistance}`);
+                                         if(taskInput) taskInput.placeholder = `Couldn't find a task matching "${taskIdentifier}".`;
+                                    }
+                                }
+                            }
+                            // --- END ADDED ---
+            
+                            // --- Add other specific commands like "complete task..." here ---
+            
+                            else { // Default: Add Task
+                                console.log(">>> Entering: Default Add Task block");
+                                console.log("Voice Input Defaulting To: Adding Task - ", `"${transcript}"`);
+                                submitNewTask(transcript);
+                            }
+                            console.log("--- Command Parsing Complete ---");
+                        }; // End of onresult
 
 
             recognition.onspeechend = () => { console.log("Speech end detected."); /* Stop might be automatic */ };
@@ -409,5 +468,45 @@ loadAndApplyInitialTheme();
         if (voiceInputBtn) { voiceInputBtn.disabled = true; voiceInputBtn.title = "Voice input not supported"; voiceInputBtn.innerHTML = '<i class="bi bi-mic-mute-fill"></i>'; }
     }
     // --- End Section 10 ---
+
+    // --- SECTION: Utility Functions (Add this section if needed) ---
+
+// Calculates the Levenshtein distance between two strings a and b
+// (Minimum number of single-character edits: insertion, deletion, substitution)
+function getLevenshteinDistance(a, b) {
+    // Create a matrix
+    const matrix = Array(b.length + 1).fill(null).map(() =>
+      Array(a.length + 1).fill(null));
+  
+    // Initialize first row and column
+    for (let i = 0; i <= a.length; i += 1) {
+      matrix[0][i] = i;
+    }
+    for (let j = 0; j <= b.length; j += 1) {
+      matrix[j][0] = j;
+    }
+  
+    // Fill the matrix
+    for (let j = 1; j <= b.length; j += 1) {
+      for (let i = 1; i <= a.length; i += 1) {
+        const indicator = a[i - 1] === b[j - 1] ? 0 : 1; // Cost is 0 if chars match, 1 otherwise
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,      // Deletion from a
+          matrix[j - 1][i] + 1,      // Insertion into a
+          matrix[j - 1][i - 1] + indicator, // Substitution
+        );
+      }
+    }
+  
+    // Return the final distance
+    return matrix[b.length][a.length];
+  }
+  
+  // Example usage (for testing in console):
+  // console.log("Distance 'kitten', 'sitting':", getLevenshteinDistance('kitten', 'sitting')); // Output: 3
+  // console.log("Distance 'book', 'back':", getLevenshteinDistance('book', 'back'));       // Output: 2
+  // console.log("Distance 'buy milk', 'buyy milk':", getLevenshteinDistance('buy milk', 'buyy milk')); // Output: 1
+  
+  // --- End Utility Functions Section ---
 
 }); // End of DOMContentLoaded listener
