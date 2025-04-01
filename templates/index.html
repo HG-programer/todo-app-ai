@@ -1,89 +1,82 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>TaskNova - AI To-Do List</title>
-    
-        <!-- Bootstrap CSS -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-        <!-- Bootstrap Icons -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-        <!-- Your Custom CSS -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
-    </head>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TaskNova - AI To-Do List</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Your Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
 <body>
 
     <!-- Main Container -->
-    <div class="container mt-4"> <!-- Added top margin -->
+    <div class="container mt-4">
 
         <!-- Header Row: Title and Theme Toggle -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="mb-0">TaskNova</h1> <!-- Changed title slightly -->
+            <h1 class="mb-0">TaskNova</h1>
             <button id="theme-toggle-btn" class="btn btn-outline-secondary btn-sm">
-                Toggle Theme 🌓 <!-- Initial text, JS will update -->
+                Toggle Theme <!-- JS will update -->
             </button>
         </div>
 
         <!-- Add New Task Form -->
-        <!-- Add New Task Form -->
         <h2 class="h4">Add New Task</h2>
-        <form id="addTaskForm" method="post" class="mb-4 d-flex align-items-center"> <!-- Ensure alignment -->
-        <input type="text" name="content" id="taskInput" placeholder="What needs doing? Or use the mic!" class="form-control me-2" required autocomplete="off">
-        <!-- Add Task Button -->
-        <button type="submit" class="btn btn-primary me-2">Add Task</button>
-        <!-- Voice Input Button -->
-        <button type="button" id="voiceInputBtn" class="btn btn-secondary" title="Add task by voice">
-        <i class="bi bi-mic-fill"></i> <!-- Microphone Icon -->
-         </button>
+        <form id="addTaskForm" class="mb-4 d-flex align-items-center">
+            <input type="text" name="content" id="taskInput" placeholder="What needs doing? Or use the mic!" class="form-control me-2" required autocomplete="off">
+            <button type="submit" class="btn btn-primary me-2">Add Task</button>
+            <button type="button" id="voiceInputBtn" class="btn btn-secondary" title="Add task by voice">
+                <i class="bi bi-mic-fill"></i>
+            </button>
         </form>
 
         <!-- Task List Section -->
         <h2>Tasks</h2>
-        <ul id="taskList" class="list-group mb-4"> <!-- Added bottom margin -->
+        <ul id="taskList" class="list-group mb-4">
+
             {% for task in tasks %}
-            <!-- Inside the {% for task in tasks %} loop -->
-<li class="list-group-item task-item d-flex justify-content-between align-items-center {% if task.completed %}task-completed{% endif %}"
-data-task-id="{{ task.id }}">
+            <li class="list-group-item task-item d-flex justify-content-between align-items-center {% if task.completed %}task-completed{% endif %}" data-task-id="{{ task.id }}">
 
-<!-- Left side: Checkbox and Task Text -->
-<div class="d-flex align-items-center task-content-container">
-    <!-- Checkbox for the task -->
-    <input class="form-check-input task-checkbox me-2"
-           type="checkbox"
-           value=""
-           id="task-check-{{ task.id }}"
-           data-task-id="{{ task.id }}"
-           {% if task.completed %}checked{% endif %}>
-    <!-- Task Text (Label linked to checkbox) -->
-    <label class="task-text form-check-label" for="task-check-{{ task.id }}">
-        {{ task.content }}
-    </label>
-</div>
+                <!-- Left side: Checkbox and Task Text -->
+                <div class="d-flex align-items-center task-content-container">
+                    <input class="form-check-input task-checkbox me-2"
+                           type="checkbox"
+                           value=""
+                           id="task-check-{{ task.id }}"
+                           data-task-id="{{ task.id }}"
+                           {% if task.completed %}checked{% endif %}>
+                    <label class="task-text form-check-label" for="task-check-{{ task.id }}">
+                        {{ task.content }}
+                    </label>
+                </div>
 
-<!-- Right side: Buttons -->
-<div class="task-buttons">
-     <!-- Ask AI Button -->
-    <button class="ask-ai-btn btn btn-info btn-sm me-1"
-            data-task-text="{{ task.content }}">
-        Ask AI
-    </button>
-    <!-- Motivate Me Button -->
-    <button class="motivate-me-btn btn btn-success btn-sm me-1"> <!-- Ensure margin if needed -->
-        Motivate Me!
-    </button>
-    <!-- Delete Button -->
-    <button class="delete-btn btn btn-danger btn-sm" data-task-id="{{ task.id }}">Delete</button>
-</div>
-</li>
-<!-- End loop item -->
+                <!-- Right side: Buttons Group -->
+                <div class="task-buttons btn-group" role="group" aria-label="Task actions">
+                    <button type="button" class="ask-ai-btn btn btn-info btn-sm" data-task-text="{{ task.content }}">
+                        Ask AI
+                    </button>
+                    <button type="button" class="motivate-me-btn btn btn-success btn-sm">
+                        Motivate Me!
+                    </button>
+                    <button type="button" class="delete-btn btn btn-danger btn-sm" data-task-id="{{ task.id }}">
+                        Delete
+                    </button>
+                </div>
+
+            </li>
             {% else %}
             <!-- Message shown when no tasks exist -->
             <li id="noTasksMessage" class="list-group-item text-muted">
                 No tasks yet! Add one above.
             </li>
-            {% endfor %}
+            {% endfor %} {# <--- THIS IS THE CRUCIAL ENDFOR TAG #}
+
         </ul> <!-- End Task List -->
 
     </div> <!-- End Main Container -->
@@ -94,12 +87,11 @@ data-task-id="{{ task.id }}">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <!-- JS will set the title -->
                     <h1 class="modal-title fs-5" id="aiResponseModalLabel"><span id="modalTaskTitle">AI Response</span></h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="aiResponseModalBody">
-                    Loading... <!-- Placeholder text -->
+                    Loading...
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
