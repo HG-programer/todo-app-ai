@@ -47,44 +47,41 @@
         <h2>Tasks</h2>
         <ul id="taskList" class="list-group mb-4"> <!-- Added bottom margin -->
             {% for task in tasks %}
-            <!--
-                List Item Structure:
-                - li (overall container, flex row)
-                  - div (checkbox + text, flex column/row)
-                  - div (buttons)
-            -->
-            <li class="list-group-item task-item d-flex justify-content-between align-items-center {% if task.completed %}task-completed{% endif %}"
-                data-task-id="{{ task.id }}"> <!-- Added task ID to li for potential easier access -->
+            <!-- Inside the {% for task in tasks %} loop -->
+<li class="list-group-item task-item d-flex justify-content-between align-items-center {% if task.completed %}task-completed{% endif %}"
+data-task-id="{{ task.id }}">
 
-                <!-- Left side: Checkbox and Task Text -->
-                <div class="d-flex align-items-center task-content-container"> <!-- Container for checkbox/text -->
-                    <input class="form-check-input task-checkbox me-2" <!-- Added margin -->
-                           type="checkbox"
-                           value=""
-                           id="task-check-{{ task.id }}" <!-- More specific ID -->
-                           data-task-id="{{ task.id }}" <!-- Data attribute REQUIRED by JS -->
-                           {% if task.completed %}checked{% endif %}>
+<!-- Left side: Checkbox and Task Text -->
+<div class="d-flex align-items-center task-content-container">
+    <!-- Checkbox for the task -->
+    <input class="form-check-input task-checkbox me-2"
+           type="checkbox"
+           value=""
+           id="task-check-{{ task.id }}"
+           data-task-id="{{ task.id }}"
+           {% if task.completed %}checked{% endif %}>
+    <!-- Task Text (Label linked to checkbox) -->
+    <label class="task-text form-check-label" for="task-check-{{ task.id }}">
+        {{ task.content }}
+    </label>
+</div>
 
-                    <label class="task-text form-check-label" for="task-check-{{ task.id }}"> <!-- Link label to checkbox -->
-                        {{ task.content }}
-                    </label>
-                </div>
-
-                <!-- Right side: Buttons -->
-                <div class="task-buttons">
-                     <!-- Ask AI Button -->
-                    <button class="ask-ai-btn btn btn-info btn-sm me-1" <!-- Added margin -->
-                            data-task-text="{{ task.content }}"> <!-- Data attribute REQUIRED by JS -->
-                        Ask AI
-                    </button>
-                    <!-- Motivate Me Button -->
-                    <button class="motivate-me-btn btn btn-success btn-sm"> <!-- Removed margin here if delete comes next -->
-                        Motivate Me!
-                    </button>
-                    <!-- Add Delete Button Placeholder Here Later -->
-                    <button class="delete-btn btn btn-danger btn-sm ms-1" data-task-id="{{ task.id }}">Delete</button>
-                </div>
-            </li>
+<!-- Right side: Buttons -->
+<div class="task-buttons">
+     <!-- Ask AI Button -->
+    <button class="ask-ai-btn btn btn-info btn-sm me-1"
+            data-task-text="{{ task.content }}">
+        Ask AI
+    </button>
+    <!-- Motivate Me Button -->
+    <button class="motivate-me-btn btn btn-success btn-sm me-1"> <!-- Ensure margin if needed -->
+        Motivate Me!
+    </button>
+    <!-- Delete Button -->
+    <button class="delete-btn btn btn-danger btn-sm" data-task-id="{{ task.id }}">Delete</button>
+</div>
+</li>
+<!-- End loop item -->
             {% else %}
             <!-- Message shown when no tasks exist -->
             <li id="noTasksMessage" class="list-group-item text-muted">
