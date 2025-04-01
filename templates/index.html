@@ -18,33 +18,44 @@
     <!-- Main Container -->
     <div class="container mt-4">
 
-        <!-- Header Row: Title and Theme Toggle -->
+        <!-- Header Row: Title, Motivation, and Theme Toggle -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="mb-0">TaskNova</h1>
-            <button id="theme-toggle-btn" class="btn btn-outline-secondary btn-sm">
-                Toggle Theme <!-- JS will update -->
-            </button>
+            <div>
+                 <!-- ADDED: Global Motivate Button -->
+                <button id="global-motivate-button" class="btn btn-success btn-sm me-2" title="Get a motivational quote">
+                    <i class="bi bi-trophy-fill"></i> <span class="d-none d-sm-inline">Motivate Me!</span>
+                </button>
+                 <!-- UPDATED: Theme Toggle Button -->
+                <button id="theme-toggle-btn" class="btn btn-outline-secondary btn-sm" title="Toggle light/dark theme">
+                    <!-- JS will update innerHTML with text & icon -->
+                </button>
+            </div>
         </div>
 
         <!-- Add New Task Form -->
         <h2 class="h4">Add New Task</h2>
         <form id="addTaskForm" class="mb-4 d-flex align-items-center">
             <input type="text" name="content" id="taskInput" placeholder="What needs doing? Or use the mic!" class="form-control me-2" required autocomplete="off">
-            <button type="submit" class="btn btn-primary me-2">Add Task</button>
-            <button type="button" id="voiceInputBtn" class="btn btn-secondary" title="Add task by voice">
+             <!-- UPDATED: Add Task Button with Icon -->
+            <button type="submit" class="btn btn-primary me-2" title="Add task">
+                 <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Add</span>
+             </button>
+             <!-- UPDATED: Voice Button Default State -->
+            <button type="button" id="voiceInputBtn" class="btn btn-primary" title="Add task by voice">
                 <i class="bi bi-mic-fill"></i>
             </button>
         </form>
 
         <!-- Task List Section -->
-        <h2>Tasks</h2>
+        <h2 class="h4">Your Tasks</h2> <!-- Changed heading slightly -->
         <ul id="taskList" class="list-group mb-4">
 
             {% for task in tasks %}
             <li class="list-group-item task-item d-flex justify-content-between align-items-center {% if task.completed %}task-completed{% endif %}" data-task-id="{{ task.id }}">
 
                 <!-- Left side: Checkbox and Task Text -->
-                <div class="d-flex align-items-center task-content-container">
+                <div class="d-flex align-items-center task-content-container me-3 flex-grow-1"> <!-- Added flex-grow-1 -->
                     <input class="form-check-input task-checkbox me-2"
                            type="checkbox"
                            value=""
@@ -52,30 +63,32 @@
                            data-task-id="{{ task.id }}"
                            {% if task.completed %}checked{% endif %}>
                     <label class="task-text form-check-label" for="task-check-{{ task.id }}">
-                        {{ task.content }}
+                        {{ task.content | escape }} {# Added escape filter for safety #}
                     </label>
                 </div>
 
                 <!-- Right side: Buttons Group -->
-                <div class="task-buttons btn-group" role="group" aria-label="Task actions">
-                    <button type="button" class="ask-ai-btn btn btn-info btn-sm" data-task-text="{{ task.content }}">
-                        Ask AI
+                <div class="task-buttons btn-group" role="group" aria-label="Task actions for {{ task.content | escape }}">
+                     <!-- UPDATED: Ask AI Button with Icon -->
+                    <button type="button" class="ask-ai-btn btn btn-outline-info btn-sm" title="Ask AI about this task" data-task-text="{{ task.content | escape }}">
+                        <i class="bi bi-magic"></i> <span class="visually-hidden">Ask AI</span>
                     </button>
-                    <button type="button" class="motivate-me-btn btn btn-success btn-sm">
-                        Motivate Me!
-                    </button>
-                    <button type="button" class="delete-btn btn btn-danger btn-sm" data-task-id="{{ task.id }}">
-                        Delete
+
+                    <!-- REMOVED: Per-task motivate button is gone -->
+
+                     <!-- UPDATED: Delete Button with Icon -->
+                    <button type="button" class="delete-btn btn btn-outline-danger btn-sm" title="Delete this task" data-task-id="{{ task.id }}">
+                        <i class="bi bi-trash"></i> <span class="visually-hidden">Delete</span>
                     </button>
                 </div>
 
             </li>
             {% else %}
             <!-- Message shown when no tasks exist -->
-            <li id="noTasksMessage" class="list-group-item text-muted">
-                No tasks yet! Add one above.
+            <li id="noTasksMessage" class="list-group-item text-center text-muted"> {# Use text-center #}
+                No tasks yet! Add one above or use the <i class="bi bi-mic-fill"></i> button. {# Updated text #}
             </li>
-            {% endfor %} {# <--- THIS IS THE CRUCIAL ENDFOR TAG #}
+            {% endfor %}
 
         </ul> <!-- End Task List -->
 
@@ -84,13 +97,16 @@
 
     <!-- Bootstrap Modal for AI Response -->
     <div class="modal fade" id="aiResponseModal" tabindex="-1" aria-labelledby="aiResponseModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg"> {# Consider modal-dialog-centered for vertical centering #}
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="aiResponseModalLabel"><span id="modalTaskTitle">AI Response</span></h1>
+                    <h1 class="modal-title fs-5" id="aiResponseModalLabel">
+                        <span id="modalTaskTitle">AI Response</span> <!-- Title set by JS -->
+                    </h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="aiResponseModalBody">
+                    <!-- Content set by JS -->
                     Loading...
                 </div>
                 <div class="modal-footer">
