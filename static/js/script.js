@@ -385,6 +385,92 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         aiModal.show();
     }
+
+    // --- (Add this maybe after Section 7 or near other handlers) ---
+// --- SECTION: Speech Synthesis (Reading Tasks) ---
+
+// Check for SpeechSynthesis support once upfront
+const supportsSpeechSynthesis = 'speechSynthesis' in window;
+
+if (!supportsSpeechSynthesis) {
+    console.warn("Browser does not support Speech Synthesis (reading aloud).");
+    // Optionally disable any UI elements related to reading tasks if they existed
+}
+
+function readTasksAloud() {
+    if (!supportsSpeechSynthesis) {
+        console.log("Speech synthesis not supported, cannot read tasks.");
+        // Provide feedback to user? Maybe alert or temporary message?
+        alert("Sorry, your browser cannot read tasks aloud.");
+        return;
+    }
+
+    if (!taskList) {
+        console.error("Task list element not found, cannot read tasks.");
+        return;
+    }
+
+    const taskItems = taskList.querySelectorAll('li.task-item');
+    let textToSpeak = "";
+    let taskCount = 0;
+
+    if (taskItems.length === 0) {
+        textToSpeak = "You have no tasks.";
+    } else {
+        taskCount = taskItems.length;
+        let tasksStrings = [];
+        taskItems.forEach((item, index) => {
+            const taskTextElement = item.querySelector('.task-text');
+            const isCompleted = item.classList.contains('task-completed');
+            if (taskTextElement) {
+                // Include completion status in reading
+                const statusPrefix = isCompleted ? "Completed: " : "";
+                // Optionally add numbering: `Task ${index + 1}. ${statusPrefix}${taskTextElement.textContent}.`
+                 tasksStrings.push(`${statusPrefix}${taskTextElement.textContent}.`);
+            }
+        });
+        const plural = taskCount === 1 ? "task" : "tasks";
+        textToSpeak = `Okay, you have ${taskCount} ${plural}. ${tasksStrings.join(' ')}`;
+    }
+
+    console.log("Attempting to speak:", textToSpeak);
+
+    // Cancel any previous speech first
+    window.speechSynthesis.cancel();
+
+    // Create an utterance
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+
+    // Optional: Configure voice, rate, pitch
+     utterance.lang = 'en-US'; // Match recognition language
+     utterance.rate = 1.0;     // Default speed
+     utterance.pitch = 1.0;    // Default pitch
+    // Find available voices (might be async, using default is safer initially)
+    // const voices = window.speechSynthesis.getVoices();
+    // utterance.voice = voices[/* desired index */];
+
+     utterance.onstart = () => {
+        console.log("SpeechSynthesis starting...");
+        // Optional: Update UI to show speaking state? e.g., voice button icon
+        // updateVoiceButtonState('speaking'); // Need to define this state
+     };
+
+     utterance.onend = () => {
+         console.log("SpeechSynthesis finished.");
+         // Optional: Reset UI state if changed onstart
+         // If triggered by voice command, recognition.onend handles voice button reset
+     };
+
+     utterance.onerror = (event) => {
+         console.error("SpeechSynthesis Error:", event.error);
+         alert(`Sorry, there was an error reading the tasks aloud: ${event.error}`);
+     };
+
+    // Speak the text
+    window.speechSynthesis.speak(utterance);
+}
+// --- END SECTION ---
+
     // --- End Section 7 ---
 
 
@@ -514,24 +600,19 @@ document.addEventListener('DOMContentLoaded', () => {
              };
 
             // UPDATED onresult with "Clear Completed"
+            // UPDATED onresult with "Read Tasks" command
             recognition.onresult = (event) => {
                 console.log("Voice recognition result received.");
-                updateVoiceButtonState('processing');
+                updateVoiceButtonState('processing'); // Processing the command
 
                 let transcript = "";
+                // ... (transcript extraction logic ...) ...
                 if (event.results && event.results.length > 0 && event.results[0].length > 0) {
-                    transcript = event.results[0][0].transcript.trim();
-                    console.log('Transcript:', transcript, 'Confidence:', event.results[0][0].confidence);
-                } else {
-                    console.warn("Received result event with no transcript.");
-                    return; // Reset happens in onend
-                }
+                     transcript = event.results[0][0].transcript.trim();
+                     console.log('Transcript:', transcript, 'Confidence:', event.results[0][0].confidence);
+                } else { /* ... handle no transcript ... */ return; }
 
-                if (transcript === "") {
-                    console.log("Empty transcript received.");
-                    if(taskInput) taskInput.placeholder = "Didn't catch that.";
-                    return; // Reset happens in onend
-                }
+                if (transcript === "") { /* ... handle empty transcript ... */ return; }
 
                 const lowerCaseTranscript = transcript.toLowerCase();
 
@@ -540,40 +621,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log("Voice Command Detected: Triggering Motivation");
                     triggerGeneralMotivation();
                 }
-                // --- ADDED: Clear Completed Tasks Command ---
                 else if (lowerCaseTranscript.includes('clear completed') || lowerCaseTranscript.includes('remove finished') || lowerCaseTranscript.includes('delete completed')) {
                     console.log("Voice Command Detected: Clearing Completed Tasks");
-                    if (!taskList) {
-                         console.error("Task list element not found, cannot clear completed.");
-                         return; // Exit if task list isn't available
-                    }
+                     // ... (clear completed logic as before) ...
+                    if (!taskList) { /* ... */ return; }
                     const completedTasks = taskList.querySelectorAll('li.task-item.task-completed');
-
-                    if (completedTasks.length === 0) {
-                        console.log("No completed tasks found to clear.");
-                        // Consider adding user feedback here (e.g., modal or temporary message)
-                        if(taskInput) taskInput.placeholder = "No completed tasks to clear.";
-                    } else {
-                        console.log(`Found ${completedTasks.length} completed tasks. Attempting to clear...`);
-                        let clearedCount = 0;
-                        completedTasks.forEach(li => {
-                            const taskId = li.dataset.taskId;
-                            const deleteButton = li.querySelector('.delete-btn'); // Find button within this LI
-
-                            if (taskId && deleteButton) {
-                                // Call handleDeleteClick, skipping the confirmation dialog
-                                handleDeleteClick(deleteButton, taskId, true); // Pass true here!
-                                clearedCount++;
-                            } else {
-                                console.warn(`Could not find taskId or delete button for a completed task item:`, li);
-                            }
-                        });
-                        console.log(`Initiated clearing for ${clearedCount} tasks.`);
-                        if(taskInput) taskInput.placeholder = `Cleared ${clearedCount} completed tasks.`; // Simple feedback
-                        // Consider adding better user feedback (e.g., modal or temporary message)
-                    }
+                    if (completedTasks.length === 0) { /* ... */ }
+                    else { /* ... loop and call handleDeleteClick(button, taskId, true) ... */ }
+                }
+                // --- ADDED: Read Tasks Aloud Command ---
+                else if (
+                    lowerCaseTranscript.includes('read tasks') ||
+                    lowerCaseTranscript.includes('read my tasks') ||
+                    lowerCaseTranscript.includes('what are my tasks') ||
+                    lowerCaseTranscript.includes('list tasks')
+                 ) {
+                    console.log("Voice Command Detected: Reading Tasks Aloud");
+                    readTasksAloud(); // Call the speech synthesis function
+                    // Voice button reset will happen in recognition.onend
                 }
                 // --- END ADDED ---
+
+                // --- Add more 'else if' blocks here for "delete task X", "complete task Y", etc. ---
+
                 else {
                     // --- Default Action: Add Task ---
                     console.log("Voice Input Detected: Adding Task - ", transcript);
