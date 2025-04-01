@@ -1,14 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
-
     // --- SECTION 1: Get References to Elements ---
     const addTaskForm = document.getElementById('addTaskForm');
     const taskInput = document.getElementById('taskInput');
     const taskList = document.getElementById('taskList'); // UL element
     const themeToggleButton = document.getElementById('theme-toggle-btn');
-    const aiModalElement = document.getElementById('aiResponseModal'); // Modal container
-    const modalTitleSpan = document.getElementById('modalTaskTitle'); // Modal title element
-    const modalBody = document.getElementById('aiResponseModalBody'); // Modal body element
-    const noTasksMsg = document.getElementById('noTasksMessage'); // Message shown when list is empty
+    const aiModalElement = document.getElementById('aiResponseModal');
+    const modalTitleSpan = document.getElementById('modalTaskTitle');
+    const modalBody = document.getElementById('aiResponseModalBody');
+    const noTasksMsg = document.getElementById('noTasksMessage');
+    // ---> ADD THIS:
+    const voiceInputBtn = document.getElementById('voiceInputBtn');
     // --- End Section 1 ---
 
 
@@ -394,5 +395,146 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     })(); // Immediately execute the theme setup function
     // --- END SECTION 7 ---
+    // --- SECTION 8: Voice Command Handling ---
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition;
 
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false; // Listen for a single command
+    recognition.lang = 'en-US';    // Set language
+    recognition.interimResults = false; // We only care about the final result
+    recognition.maxAlternatives = 1;    // Get the most likely result
+
+    if (voiceInputBtn) {
+        voiceInputBtn.addEventListener('click', () => {
+            try {
+                recognition.start();
+                console.log("Voice recognition started. Try speaking into the microphone.");
+                // Update UI to show listening state
+                voiceInputBtn.innerHTML = '<i class="bi bi-record-circle"></i>'; // Recording icon
+                voiceInputBtn.disabled = true;
+                taskInput.placeholder = "Listening..."; // Update placeholder
+            } catch(e) {
+                console.error("Error starting voice recognition:", e);
+                alert("Could not start voice recognition. Is the microphone already in use or permissions blocked?");
+                // Reset button in case of immediate error
+                resetVoiceButton();
+            }
+        });
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.trim();
+            console.log('Voice Result:', transcript);
+            console.log('Confidence:', event.results[0][0].confidence);
+
+            if (transcript) {
+                 // Automatically try to add the task using the transcript
+                 addTaskViaVoice(transcript); // Call the backend add logic
+                // Or, alternatively, just put text in input:
+                // taskInput.value = transcript;
+            } else {
+                console.log("Empty transcript received.");
+                // Maybe provide feedback: "Didn't catch that."
+                 taskInput.placeholder = "Didn't catch that. Try again?";
+            }
+        };
+
+        recognition.onspeechend = () => {
+            console.log("User finished speaking.");
+            recognition.stop(); // Explicitly stop in case browser doesn't always
+        };
+
+        recognition.onnomatch = (event) => {
+            console.log("Speech not recognized.");
+            taskInput.placeholder = "Couldn't recognise speech. Try again?";
+        };
+
+        recognition.onerror = (event) => {
+            console.error(`Speech recognition error detected: ${event.error}`);
+            let errorMsg = `Speech Error: ${event.error}`;
+            if (event.error === 'no-speech') {
+                errorMsg = "No speech detected. Microphone might be muted?";
+                taskInput.placeholder = "No speech detected.";
+            } else if (event.error === 'audio-capture') {
+                errorMsg = "Audio capture failed. No microphone found or input device issue.";
+                 taskInput.placeholder = "Mic input error.";
+            } else if (event.error === 'not-allowed') {
+                errorMsg = "Microphone permission denied. Please allow access in browser settings.";
+                 taskInput.placeholder = "Mic permission denied.";
+            } else if (event.error === 'network') {
+                 errorMsg = "Network error during speech recognition.";
+                 taskInput.placeholder = "Network error.";
+             }
+            alert(errorMsg); // Alert the user
+        };
+
+        recognition.onend = () => {
+            console.log("Voice recognition ended.");
+            // Reset UI regardless of success/error
+            resetVoiceButton();
+        };
+
+    } else {
+        console.warn("Voice input button (#voiceInputBtn) not found!");
+    }
+
+} else {
+    console.warn("Web Speech API (SpeechRecognition) not supported in this browser.");
+    // Hide or disable the voice button if the API is not supported
+    if (voiceInputBtn) {
+        voiceInputBtn.disabled = true;
+        voiceInputBtn.title = "Voice input not supported in this browser";
+        voiceInputBtn.innerHTML = '<i class="bi bi-mic-mute-fill"></i>'; // Muted icon
+    }
+}
+
+// Helper function to reset the voice button state
+function resetVoiceButton() {
+     if(voiceInputBtn) {
+        voiceInputBtn.innerHTML = '<i class="bi bi-mic-fill"></i>'; // Original icon
+        voiceInputBtn.disabled = false;
+    }
+    taskInput.placeholder = "What needs doing? Or use the mic!"; // Reset placeholder
+}
+
+// New function to handle adding task from voice (re-uses backend logic)
+async function addTaskViaVoice(taskText) {
+    console.log(`Attempting to add task via voice: "${taskText}"`);
+    const submitButton = addTaskForm.querySelector('button[type="submit"]');
+
+    // Briefly disable buttons during add process
+    if(submitButton) submitButton.disabled = true;
+    if(voiceInputBtn) voiceInputBtn.disabled = true;
+
+    try {
+        const response = await fetch("/add", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: taskText })
+        });
+        const result = await response.json();
+
+        if (response.status === 201 && result.success) {
+            addNewTaskToList(result.task);
+            taskInput.value = ''; // Clear input field in case user typed something
+            console.log(`Task "${taskText}" added successfully via voice.`);
+        } else {
+            console.error("Error adding task via voice:", result.error || `Status: ${response.status}`);
+            // Show error, potentially put failed text back in input?
+             taskInput.value = taskText; // Put it back for manual submission?
+            alert(`Error adding task "${taskText}": ${result.error || 'Unknown server error'}`);
+        }
+    } catch (error) {
+        console.error('Network or fetch error adding task via voice:', error);
+        taskInput.value = taskText; // Put it back for manual submission
+        alert(`Failed to add task "${taskText}" due to network/fetch error.`);
+    } finally {
+         // Re-enable buttons in finally block ensures it happens even if errors occur
+        if(submitButton) submitButton.disabled = false;
+        // Don't re-enable voice button here, rely on recognition.onend
+    }
+}
+
+// --- End Section 8 ---
 }); // End of DOMContentLoaded listener
