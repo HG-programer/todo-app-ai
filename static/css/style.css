@@ -119,15 +119,44 @@ a {
   gap: 0.5rem;
 }
 
+/* style.css */
+
+/* --- Task List Styling --- */
+
+/* ... existing .list-group-item styles ... */
+/* ... existing .task-item styles ... */
+/* ... existing .task-content-container styles ... */
+
+/* Base style for the task text itself */
+.task-text {
+  /* Ensure smooth transitions for color and text decoration */
+  transition: color var(--theme-transition-duration) ease-in-out,
+              text-decoration-color 0.2s ease-in-out; /* Animate the strikethrough color */
+              /* Note: animating text-decoration: line-through directly can be tricky/abrupt. */
+              /* Animating its color often gives a smoother feel. */
+  /* Prevent line-through from making text jump if font width changes */
+  display: inline-block; /* Or block if it makes sense in your layout */
+  vertical-align: middle; /* Align with checkbox better */
+  width: calc(100% - 25px); /* Approximate width minus checkbox - adjust if needed */
+  word-break: break-word; /* Prevent very long words from overflowing */
+
+}
+
+
 /* Styles for completed tasks */
 .task-completed .task-text {
   text-decoration: line-through;
   color: var(--task-completed-text-color);
-  transition: color var(--theme-transition-duration) ease;
+  /* The transition property is now primarily handled by the base .task-text rule */
+   text-decoration-thickness: 1px; /* Optional: Ensure line isn't too thick */
+   text-decoration-color: var(--task-completed-text-color); /* Ensure line matches text */
+
 }
 .list-group-item.task-completed {
   background-color: var(--task-completed-bg-color);
 }
+
+/* ... existing #noTasksMessage styles ... */
 
 /* Styles for the "Empty State" message */
 #noTasksMessage { /* Defined ONCE */
