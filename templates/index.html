@@ -102,5 +102,29 @@
     <!-- Your Custom JavaScript -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
+    <!-- ... Your Modal ... -->
+    <!-- ... Your Scripts ... -->
+
+    <!-- ADDED: Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <!-- Optional: Icon can go here -->
+                <!-- <i class="bi bi-bell-fill me-2"></i> -->
+                <strong class="me-auto" id="toastTitle">Notification</strong>
+                <small id="toastTimestamp">Just now</small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toastBody">
+                <!-- Message goes here -->
+            </div>
+        </div>
+         <!-- Add more .toast divs here if you want multiple toasts stacked -->
+    </div>
+    <!-- End Toast Container -->
+
+</body>
+</html>
+
 </body>
 </html>
