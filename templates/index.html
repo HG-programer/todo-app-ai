@@ -80,10 +80,20 @@
                     </button>
                 </div>
             </li>
-            {% else %}
-            <!-- Message shown when no tasks exist -->
-            <li id="noTasksMessage" class="list-group-item text-center text-muted"> {# Use text-center #}
-                No tasks yet! Add one above or use the <i class="bi bi-mic-fill"></i> button. {# Updated text #}
+            <ul id="taskList" class="list-group mb-4">
+
+                {% for task in tasks %}
+                    {# ... your existing task rendering li ... #}
+                {% else %}
+                <!-- UPDATED Empty State Message -->
+                <li id="noTasksMessage" class="list-group-item text-center py-5"> {# Increased padding #}
+                    <i class="bi bi-card-checklist d-block mb-3" style="font-size: 4rem; color: var(--app-secondary-color);"></i> {# Large Icon #}
+                    <h5 class="mb-3">Your task list is empty!</h5>
+                    <p class="text-muted">Add a new task using the form above, or try the <i class="bi bi-mic-fill"></i> voice command.</p>
+                </li>
+                {% endfor %}
+    
+            </ul> <!-- End Task List -->
             </li>
             {% endfor %}
 
