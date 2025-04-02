@@ -47,59 +47,31 @@
             </button>
         </form>
 
-        <!-- Task List Section -->
-        <h2 class="h4">Your Tasks</h2> <!-- Changed heading slightly -->
-        <ul id="taskList" class="list-group mb-4">
-
-            {% for task in tasks %}
-            <li class="list-group-item task-item d-flex justify-content-between align-items-center {% if task.completed %}task-completed{% endif %}" data-task-id="{{ task.id }}"> {# Added d-flex #}
-
-                <!-- Left side: Checkbox and Task Text -->
-                 <!-- MODIFIED: Add flex, remove me-3 -->
-                <div class="d-flex align-items-center flex-grow-1 task-content-container">
-                     <!-- MODIFIED: Removed me-2 -->
-                    <input class="form-check-input task-checkbox"
-                           type="checkbox"
-                           value=""
-                           id="task-check-{{ task.id }}"
-                           data-task-id="{{ task.id }}"
-                           {% if task.completed %}checked{% endif %}>
-                    <label class="task-text form-check-label" for="task-check-{{ task.id }}">
-                        {{ task.content | escape }}
-                    </label>
-                </div>
-
-                <!-- Right side: Buttons Group (btn-group handles spacing) -->
-                <div class="task-buttons btn-group" role="group" aria-label="Task actions for {{ task.content | escape }}">
-                    <!-- ... buttons ... -->
-                    <button type="button" class="ask-ai-btn btn btn-outline-info btn-sm" title="Ask AI" data-task-text="{{ task.content | escape }}">
-                        <i class="bi bi-magic"></i> <span class="visually-hidden">Ask AI</span>
-                    </button>
-                    <button type="button" class="delete-btn btn btn-outline-danger btn-sm" title="Delete" data-task-id="{{ task.id }}">
-                        <i class="bi bi-trash"></i> <span class="visually-hidden">Delete</span>
-                    </button>
-                </div>
-            </li>
-            <ul id="taskList" class="list-group mb-4">
-
-                {% for task in tasks %}
-                    {# ... your existing task rendering li ... #}
-                {% else %}
-                <!-- UPDATED Empty State Message -->
-                <li id="noTasksMessage" class="list-group-item text-center py-5"> {# Increased padding #}
-                    <i class="bi bi-card-checklist d-block mb-3" style="font-size: 4rem; color: var(--app-secondary-color);"></i> {# Large Icon #}
-                    <h5 class="mb-3">Your task list is empty!</h5>
-                    <p class="text-muted">Add a new task using the form above, or try the <i class="bi bi-mic-fill"></i> voice command.</p>
-                </li>
-                {% endfor %}
-    
-            </ul> <!-- End Task List -->
-            </li>
-            {% endfor %}
-
-        </ul> <!-- End Task List -->
-
-    </div> <!-- End Main Container -->
+                <!-- Task List Section -->
+                <h2 class="h4">Your Tasks</h2>
+                <ul id="taskList" class="list-group mb-4"> {# Main UL for the list #}
+        
+                    {% for task in tasks %} {# Start loop for actual tasks #}
+                    <li class="list-group-item task-item d-flex justify-content-between align-items-center {% if task.completed %}task-completed{% endif %}" data-task-id="{{ task.id }}">
+                        <div class="d-flex align-items-center flex-grow-1 task-content-container">
+                            <input class="form-check-input task-checkbox" type="checkbox" value="" id="task-check-{{ task.id }}" data-task-id="{{ task.id }}" {% if task.completed %}checked{% endif %}>
+                            <label class="task-text form-check-label" for="task-check-{{ task.id }}">{{ task.content | escape }}</label>
+                        </div>
+                        <div class="task-buttons btn-group" role="group" aria-label="Task actions for {{ task.content | escape }}">
+                            <button type="button" class="ask-ai-btn btn btn-outline-info btn-sm" title="Ask AI" data-task-text="{{ task.content | escape }}"><i class="bi bi-magic"></i> <span class="visually-hidden">Ask AI</span></button>
+                            <button type="button" class="delete-btn btn btn-outline-danger btn-sm" title="Delete" data-task-id="{{ task.id }}"><i class="bi bi-trash"></i> <span class="visually-hidden">Delete</span></button>
+                        </div>
+                    </li>
+                    {% else %} {# If the loop runs zero times, execute this block #}
+                    <!-- UPDATED Empty State Message (CORRECTLY PLACED) -->
+                    <li id="noTasksMessage" class="list-group-item text-center py-5">
+                        <i class="bi bi-card-checklist d-block mb-3" style="font-size: 4rem; color: var(--app-secondary-color);"></i>
+                        <h5 class="mb-3">Your task list is empty!</h5>
+                        <p class="text-muted">Add a new task using the form above, or try the <i class="bi bi-mic-fill"></i> voice command.</p>
+                    </li>
+                    {% endfor %} {# End the one and only task loop #}
+        
+                </ul> <!-- End Main UL Task List -->
 
 
     <!-- Bootstrap Modal for AI Response -->
