@@ -253,9 +253,29 @@ function addNewTaskToList(task) {
     // --- End Section 7 ---
 
 
-    // --- SECTION 8: Initial UI Setup ---
-    document.querySelectorAll('.task-checkbox').forEach(cb => { const li = cb.closest('.task-item'); if (li) { li.classList.toggle('task-completed', cb.checked); } });
-    if (taskList && taskList.children.length === 0 && noTasksMsg) { noTasksMsg.style.display = 'block'; } else if (noTasksMsg) { noTasksMsg.style.display = 'none'; }
+       // --- SECTION 8: Initial UI Setup ---
+    // Set initial state for existing tasks (e.g., completed class)
+    document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+        const listItem = checkbox.closest('.task-item');
+        if (listItem) {
+             listItem.classList.toggle('task-completed', checkbox.checked);
+        }
+    });
+
+    // IMPROVED Check if task list is empty on load
+    if (taskList && noTasksMsg) { // Ensure both elements exist
+        const hasTaskItems = taskList.querySelector('li.task-item') !== null; // Check specifically for task items
+
+        if (hasTaskItems) {
+            // If there ARE task items, hide the message
+            noTasksMsg.style.display = 'none';
+             console.log("Initial load: Tasks found, hiding empty message.");
+        } else {
+            // If there are NO task items, make SURE the message is visible
+            noTasksMsg.style.display = 'block'; // Or 'list-item' if needed, but block usually works
+             console.log("Initial load: No tasks found, ensuring empty message is visible.");
+        }
+    }
     // --- End Section 8 ---
 
 
