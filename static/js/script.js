@@ -50,9 +50,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch("/add", { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: taskContent }) });
             const result = await response.json();
             if (response.status === 201 && result.success && result.task) {
-                addNewTaskToList(result.task); if(taskInput) taskInput.value = ''; console.log(`Task "${taskContent}" added successfully.`);
-            } else { throw new Error(result.error || `Status: ${response.status}`); }
-        } catch (error) { console.error('Error adding task:', error.message); alert(`Error adding task: ${error.message}`);
+                // --- ADDED LOG: Confirm success condition ---
+                console.log("submitNewTask success condition met. Task data:", result.task);
+               addNewTaskToList(result.task); // Add visually
+               if(taskInput) taskInput.value = ''; // Clear input field only on success
+               console.log(`Task "${taskContent}" add flow initiated in UI.`); // Renamed log
+           } else {
+               // Log if the condition failed but response was kinda okay
+               console.error("Task add request okay, but success/task data invalid.", "Status:", response.status, "Result:", result);
+               throw new Error(result.error || `Invalid success response: ${response.status}`); // Throw error to be caught below
+           }
+       } catch (error) { // ... (error handling) ...
+            console.error('Error adding task:', error.message);
+            alert(`Error adding task: ${error.message}`);
         } finally {
             if(submitButton) { submitButton.disabled = false; submitButton.innerHTML = originalButtonHTML; }
             if(voiceInputBtn && (!recognitionActive)) { resetVoiceButton(); }
@@ -103,45 +113,67 @@ document.addEventListener('DOMContentLoaded', () => {
     } else { console.error("Task list (#taskList) element not found!"); }
     // --- End Section 4 ---
 
-    // --- SECTION 5: Helper Function to Create and Add New Task LI Element ---
-        // --- SECTION 5: Helper Function to Create and Add New Task LI Element ---
-        function addNewTaskToList(task) {
-            // ... (other setup code) ...
-            const li = document.createElement('li');
-            // MODIFIED: Add base flex class directly to LI for gap control
-            li.className = `list-group-item task-item d-flex justify-content-between align-items-center ${task.completed ? 'task-completed' : ''}`;
-            li.dataset.taskId = task.id;
-    
-            const taskContentDiv = document.createElement('div');
-            // MODIFIED: Add flex classes here too for internal gap
-            taskContentDiv.className = 'd-flex align-items-center flex-grow-1'; // REMOVED me-3
-    
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            // MODIFIED: Removed me-2
-            checkbox.className = 'form-check-input task-checkbox';
-            checkbox.checked = task.completed;
-            checkbox.id = `task-${task.id}`;
-    
-            // ... (span/label code remains the same) ...
-            const span = document.createElement('span');
-            span.className = 'task-text';
-            span.textContent = task.content;
-    
-            taskContentDiv.appendChild(checkbox);
-            taskContentDiv.appendChild(span);
-    
-            const buttonDiv = document.createElement('div');
-            buttonDiv.className = 'task-buttons btn-group'; // btn-group manages internal button spacing
-    
-            // ... (button creation remains the same) ...
-    
-            li.appendChild(taskContentDiv);
-            li.appendChild(buttonDiv);
-    
-            // ... (rest of the function - appending, animation) ...
-        }
-        // --- End Section 5 ---
+       // --- SECTION 5: Helper Function to Create and Add New Task LI Element ---
+function addNewTaskToList(task) {
+    // --- ADDED LOG: Check if function is called and task data is okay ---
+    console.log(">>> addNewTaskToList called with task:", task);
+
+    // --- ADDED LOG: Verify taskList element exists ---
+    console.log("taskList element:", taskList);
+
+    if (!taskList || !task || typeof task.id === 'undefined') {
+        console.error("Cannot add task to list - invalid input or list element missing.", task);
+        return;
+    }
+    const li = document.createElement('li');
+    li.className = `list-group-item task-item d-flex justify-content-between align-items-center ${task.completed ? 'task-completed' : ''}`;
+    li.dataset.taskId = task.id;
+
+    // ... (rest of element creation: taskContentDiv, checkbox, span, buttonDiv, buttons) ...
+    const taskContentDiv = document.createElement('div');
+    taskContentDiv.className = 'd-flex align-items-center flex-grow-1 task-content-container';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'form-check-input task-checkbox';
+    checkbox.checked = task.completed;
+    checkbox.id = `task-${task.id}`;
+    const span = document.createElement('span');
+    span.className = 'task-text';
+    span.textContent = task.content;
+    taskContentDiv.appendChild(checkbox); taskContentDiv.appendChild(span);
+
+    const buttonDiv = document.createElement('div'); buttonDiv.className = 'task-buttons btn-group';
+    const aiButton = document.createElement('button'); aiButton.type="button"; aiButton.className='ask-ai-btn btn btn-outline-info btn-sm'; aiButton.title="Ask AI"; aiButton.dataset.taskText=task.content; aiButton.innerHTML='<i class="bi bi-magic"></i><span class="visually-hidden">AI</span>';
+    const deleteButton = document.createElement('button'); deleteButton.type="button"; deleteButton.className='delete-btn btn btn-outline-danger btn-sm'; deleteButton.title="Delete"; deleteButton.innerHTML='<i class="bi bi-trash"></i><span class="visually-hidden">Del</span>';
+    buttonDiv.appendChild(aiButton); buttonDiv.appendChild(deleteButton);
+
+
+    li.appendChild(taskContentDiv);
+    li.appendChild(buttonDiv);
+
+    // --- ADDED LOG: Check the constructed LI element before appending ---
+    console.log("Constructed LI element:", li);
+
+    // --- ADDED LOG: Confirm appending is about to happen ---
+    console.log("Attempting to append LI to taskList...");
+    taskList.appendChild(li);
+    // --- ADDED LOG: Confirm appending finished ---
+    console.log("LI appended.");
+
+
+    requestAnimationFrame(() => {
+        // --- ADDED LOG: Confirm animation class addition ---
+         console.log("Applying fade-in animation class.");
+         li.classList.add('task-fade-in');
+    });
+
+    // ... (rest of function - animation listener, noTasksMsg hide) ...
+    if (noTasksMsg && noTasksMsg.style.display !== 'none') { noTasksMsg.style.display = 'none'; }
+
+     console.log("<<< addNewTaskToList finished."); // Added Log
+}
+// --- End Section 5 ---
+
 
     // --- SECTION 6: Task Action Handlers ---
     async function handleAskAiClick(button, taskText) { /* ... keep as is ... */
