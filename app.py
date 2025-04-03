@@ -266,3 +266,25 @@ if __name__ == '__main__': # Corrected typo here from your original paste
     app.run(debug=False, host='0.0.0.0', port=port)
 
 print("--- Python script finished initial setup ---", file=sys.stderr) # Add final log
+
+# Add this near your other routes in app.py
+
+@app.route('/tasks', methods=['GET']) # New route!
+def get_tasks():
+    """Returns all tasks as JSON."""
+    try:
+        all_tasks = Task.query.order_by(Task.id).all()
+        # Convert task objects to dictionaries for JSON serialization
+        tasks_list = [
+            {"id": task.id, "content": task.content, "completed": task.completed}
+            for task in all_tasks
+        ]
+        print(f"API: Returning {len(tasks_list)} tasks.", file=sys.stderr)
+        return jsonify(tasks_list) # Use jsonify!
+    except Exception as e:
+        print(f"Error fetching tasks for API: {e}", file=sys.stderr)
+        # Check for table not found specifically if needed
+        if "relation \"task\" does not exist" in str(e) or "UndefinedColumn" in str(e):
+             print("API: Task table likely doesn't exist or has wrong schema.", file=sys.stderr)
+             return jsonify({"error": "Database table not found or schema mismatch"}), 500 # Internal Server Error
+        return jsonify({"error": "Internal server error fetching tasks"}), 500
